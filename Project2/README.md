@@ -8,6 +8,9 @@ The algorithm explores the grid, stores visited nodes, reconstructs the optimal 
 
 ---
 
+# GitHub Repository
+https://github.com/mmullan1/ENPM661/tree/662a6a862895d3738de6e3db569e8108168fa4b6/Project2
+
 # Dependencies
 
 The following Python libraries are required:

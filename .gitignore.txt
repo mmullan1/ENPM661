@@ -1,0 +1,8 @@
+# presentations
+*.ppt
+*.pptx
+*.pps
+*.ppsx
+
+# files I don't want on GitHub
+ignored_files/
