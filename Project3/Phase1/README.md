@@ -2,7 +2,8 @@
 # A* Planning – Obstacle Course
 
 This project implements **A* Algorithm** to compute the shortest path between a start and goal position on a 2D grid map while avoiding obstacles.  
-The obstacle environment is constructed using **semi‑algebraic sets** forming the text pattern **“MM 2577”**, with an additional **2 mm collision boundary** around each obstacle.
+The obstacle environment is constructed using **semi‑algebraic sets** forming the text pattern **“MM 2577”**, with an additional configurable boundary around each obstacle,
+enabling the program to simulate how a circular robot would operate instead of just a point robot.
 
 The algorithm explores the grid, stores visited nodes, reconstructs the optimal path, and animates the search and final path using Matplotlib.
 
@@ -11,12 +12,9 @@ Team Members:
 Michael Mullaney
 UID: 122332577
 
-
+# GitHub Repository
 GitHub Repository: https://github.com/mmullan1/ENPM661/tree/main/Project3
 ---
-
-# GitHub Repository
-https://github.com/mmullan1/ENPM661/tree/662a6a862895d3738de6e3db569e8108168fa4b6/Project2
 
 # Dependencies
 
@@ -53,15 +51,16 @@ x,y,d
 
 where x and y are cartesian coordinates, and d is the orientation (deg), which must be a multiple of 30
 
-Example:
-
-Choose starting x,y, d coordinates: 10,10,30 
-Choose goal x,y,d coordinates: 150,40,60
-
-
 The program then asks the user to input the clearance around the obstacles (i.e., the robot's radius)
 
 Last, the user will input the step size that each step of the solver takes
+
+Example (this is the one shown in the mp4 video):
+
+Choose starting x,y, d coordinates: 20,20,30
+Choose goal x,y,d coordinates: 400,150,0
+Choose the clearance around the obstacles (also is the robot's radius):5
+Choose step size (1 to 10):10
 ---
 
 # Map Limits
