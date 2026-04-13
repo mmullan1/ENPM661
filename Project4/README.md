@@ -15,13 +15,14 @@ ENPM661/
 └── Project4/
     ├── package_122332577/
     │   └── package_michael/
+    │       ├── resource/
+    │       │   └── package_michael  
     │       ├── package.xml
     │       ├── setup.py
     │       ├── setup.cfg
-    │       ├── resource/
     │       ├── pick_and_place.py
     │       └── __init__.py
-    └── README.txt 
+    └── README.txt  
 ```
 
 ---
