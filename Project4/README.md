@@ -11,15 +11,17 @@ The robot moves through a sequence of poses, simulating object manipulation by o
 ## Package Structure
 
 ```
-
-package_122332577/
-├── __init__.py
-├── package.xml
-├── pick_and_place.py
-├── README.txt
-├── setup.cfg
-├── setup.py
-└── test/
+ENPM661/
+└── Project4/
+    ├── package_122332577/
+    │   └── package_michael/
+    │       ├── package.xml
+    │       ├── setup.py
+    │       ├── setup.cfg
+    │       ├── resource/
+    │       ├── pick_and_place.py
+    │       └── __init__.py
+    └── README.txt 
 ```
 
 ---
@@ -75,7 +77,6 @@ ros2 run package_michael pick_and_place
 ## Notes
 
 * Joint positions are hardcoded for demonstration purposes
-* The sequence is designed for simulation but can be adapted for real hardware
 * Timing between actions is handled using simple delays
 * When running the code, it is "package_michael" instead of "package_122332577"; that's because I didn't see that instruction for the naming until later
 
