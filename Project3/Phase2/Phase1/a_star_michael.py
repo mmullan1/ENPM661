@@ -13,10 +13,10 @@ closed_list = set()
 
 #-----------------------------------------------------------
 # Differential Drive Constraints and Action Primitives
-def cost(Xi,Yi,Thetai,UL,UR):
+def cost(Xi,Yi,Thetai,UL,UR, scale):
     t = 0
-    r = 0.033
-    L = 0.287
+    r = 0.033*scale
+    L = 0.287*scale
     dt = 0.1
     Xn=Xi
     Yn=Yi
@@ -40,11 +40,11 @@ def cost(Xi,Yi,Thetai,UL,UR):
     return Xn, Yn, Thetan, D
     
     
-def run_actions(Xi, Yi, Thetai, RPM1, RPM2):
+def run_actions(Xi, Yi, Thetai, RPM1, RPM2, scale):
     actions=[[0, RPM1], [RPM1, 0],[RPM1, RPM1],[0, RPM2],[RPM2, 0],[RPM2, RPM2], [RPM1, RPM2], [RPM2, RPM1]]
     actions_set = []
     for action in actions:
-        k=cost(Xi,Yi, Thetai, action[0], action[1]) 
+        k=cost(Xi,Yi, Thetai, action[0], action[1], scale) 
         # print(k)
         actions_set.append(k)
     return actions_set
@@ -63,7 +63,7 @@ def discretize(node):
 
 
 #-----------------------------------------------------------
-def run_AStar(start_pos, goal_pos, all_collisions, clearance):
+def run_AStar(start_pos, goal_pos, all_collisions, clearance, scale):
     """
     Initialize the alg by adding the start state to the open list and then 
     calling the function to compare against the goal state. A* will continue 
@@ -99,12 +99,12 @@ def run_AStar(start_pos, goal_pos, all_collisions, clearance):
     heapq.heappush(open_list, (ct, info))
 
     # start loop
-    t_fin = compare_against_goal(goal_pos, start_pos, all_collisions, clearance)
+    t_fin = compare_against_goal(goal_pos, start_pos, all_collisions, clearance, scale)
 
     return t_init, t_fin
 
 #-----------------------------------------------------------
-def compare_against_goal(goal_pos, start_pos, all_collisions, clearance):
+def compare_against_goal(goal_pos, start_pos, all_collisions, clearance, scale):
     """
     The loop that runs until the open list is empty
     """
@@ -131,11 +131,11 @@ def compare_against_goal(goal_pos, start_pos, all_collisions, clearance):
             closed_list.add(child_t_disc)
             explored_nodes.append(child_t)
 
-            generate_possible_moves(start_pos, parent_disc_state, c2c, actual_state, all_collisions)
+            generate_possible_moves(start_pos, parent_disc_state, c2c, actual_state, all_collisions, scale)
 
     # return t_fin
 #-----------------------------------------------------------
-def generate_possible_moves(start_pos, parent_disc_state, c2c, actual_state, all_collisions):
+def generate_possible_moves(start_pos, parent_disc_state, c2c, actual_state, all_collisions, scale):
     """
     From the previous location, generate possible next steps,
     evaluate to ensure they aren't in a collision or out of
@@ -145,7 +145,7 @@ def generate_possible_moves(start_pos, parent_disc_state, c2c, actual_state, all
     """
     global open_list
     # print(actual_state)
-    Actions_Set = run_actions(actual_state[0], actual_state[1], actual_state[2], RPM1, RPM2)
+    Actions_Set = run_actions(actual_state[0], actual_state[1], actual_state[2], RPM1, RPM2, scale)
     # print(f"ACTIONS_SET: {Actions_Set}")
 
     # run through all possible actions
@@ -279,109 +279,117 @@ def animate_search_and_path(order, explored_nodes, t_fin):
 #-----------------------------------------------------------
 def draw_obstacle_course(order, clearance):
     """
-    Construct a 600x250 MatPlotLib graph with the obstacle "MM 2577" (green)
-    and add a boundary of 2 extra mm around that (yellow)
+    Construct a 600x300 MatPlotLib graph with the obstacle "MM 2577" (green)
+    and add a boundary of extra clearance + 170 mm (robot radius),
+    but scaled by a factor of 1/8(yellow)
     """
     # Grid
-    x = np.arange(0, 4000, 0.5)
-    y = np.arange(0, 2000, 0.5)
+    x = np.arange(0, 600, 0.5)
+    y = np.arange(0, 300, 0.5)
     X, Y = np.meshgrid(x, y)
 
+    X_plot = X
+    Y_plot = Y
+
+    Sx = 600/180
+    Sy = 300/50
+
+    X = X/Sx
+    Y = Y/Sy
     # Thickness parameter
     eps = 1
 
+    # --- Define the First Entry M as a semi-algebraic set ---
+    left_bar = (X - 5)**2 <= eps**2
+    left_bar &= (Y >= 10) & (Y <= 40)
 
-    # ----- Define first obstacle 
-    # # --- Define the First Entry M as a semi-algebraic set ---
-    # left_bar = (X - 5)**2 <= eps**2
-    # left_bar &= (Y >= 10) & (Y <= 40)
+    right_bar = (X - 25)**2 <= eps**2
+    right_bar &= (Y >= 10) & (Y <= 40)
 
-    # right_bar = (X - 25)**2 <= eps**2
-    # right_bar &= (Y >= 10) & (Y <= 40)
-
-    # left_diag = (Y - (-2*(X - 5) + 40))**2 <= eps**2
-    # left_diag &= (X >= 5) & (X <= 15)
-    # left_diag &= (Y >= 20) & (Y <= 40)
+    left_diag = (Y - (-2*(X - 5) + 40))**2 <= eps**2
+    left_diag &= (X >= 5) & (X <= 15)
+    left_diag &= (Y >= 20) & (Y <= 40)
 
 
-    # right_diag = (Y - (2*(X - 25) + 40))**2 <= eps**2
-    # right_diag &= (X >= 15) & (X <= 25)
-    # right_diag &= (Y >= 20) & (Y <= 40)
+    right_diag = (Y - (2*(X - 25) + 40))**2 <= eps**2
+    right_diag &= (X >= 15) & (X <= 25)
+    right_diag &= (Y >= 20) & (Y <= 40)
 
-    # E1 = left_bar | right_bar | left_diag | right_diag
+    E1 = left_bar | right_bar | left_diag | right_diag
 
-    # # --- Define the Second Entry M as a semi-algebraic set ---
-    # left_bar2 = ((X-30) - 5)**2 <= eps**2
-    # left_bar2 &= (Y >= 10) & (Y <= 40)
+    # --- Define the Second Entry M as a semi-algebraic set ---
+    left_bar2 = ((X-30) - 5)**2 <= eps**2
+    left_bar2 &= (Y >= 10) & (Y <= 40)
 
-    # right_bar2 = ((X-30) - 25)**2 <= eps**2
-    # right_bar2 &= (Y >= 10) & (Y <= 40)
+    right_bar2 = ((X-30) - 25)**2 <= eps**2
+    right_bar2 &= (Y >= 10) & (Y <= 40)
 
-    # left_diag2 = (Y - (-2*((X-30) - 5) + 40))**2 <= eps**2
-    # left_diag2 &= ((X-30) >= 5) & ((X-30) <= 15)
-    # left_diag2 &= (Y >= 20) & (Y <= 40)
+    left_diag2 = (Y - (-2*((X-30) - 5) + 40))**2 <= eps**2
+    left_diag2 &= ((X-30) >= 5) & ((X-30) <= 15)
+    left_diag2 &= (Y >= 20) & (Y <= 40)
 
-    # right_diag2 = (Y - (2*((X-30) - 25) + 40))**2 <= eps**2
-    # right_diag2 &= ((X-30) >= 15) & ((X-30) <= 25)
-    # right_diag2 &= (Y >= 20) & (Y <= 40)
+    right_diag2 = (Y - (2*((X-30) - 25) + 40))**2 <= eps**2
+    right_diag2 &= ((X-30) >= 15) & ((X-30) <= 25)
+    right_diag2 &= (Y >= 20) & (Y <= 40)
 
-    # E2 = left_bar2 | right_bar2 | left_diag2 | right_diag2
+    E2 = left_bar2 | right_bar2 | left_diag2 | right_diag2
 
 
-    # # --- Define the Third Entry 2 as a semi-algebraic set ---
-    # top = ((X-75)**2 + (Y-32)**2 >= (9-eps/2)**2)
-    # top &= ((X-75)**2 + (Y-32)**2 <= (9+eps/2)**2)
-    # top &= (X >= 66) & (X <= 84)
-    # top &= (Y >= 32)
+    # --- Define the Third Entry 2 as a semi-algebraic set ---
+    top = ((X-75)**2 + (Y-32)**2 >= (9-eps/2)**2)
+    top &= ((X-75)**2 + (Y-32)**2 <= (9+eps/2)**2)
+    top &= (X >= 66) & (X <= 84)
+    top &= (Y >= 32)
 
-    # diag = (Y - (1.11*(X-84) + 32))**2 <= eps**2
-    # diag &= (X >= 66) & (X <= 84)
-    # diag &= (Y >= 12) & (Y <= 32)
+    diag = (Y - (1.11*(X-84) + 32))**2 <= eps**2
+    diag &= (X >= 66) & (X <= 84)
+    diag &= (Y >= 12) & (Y <= 32)
 
-    # bottom = (X >= 66) & (X <= 84)
-    # bottom &= (Y - 12)**2 <= eps**2
+    bottom = (X >= 66) & (X <= 84)
+    bottom &= (Y - 12)**2 <= eps**2
 
-    # E3 = top | diag | bottom
+    E3 = top | diag | bottom
         
-    # # --- Define the Fourth Entry 5 as a semi-algebraic set ---
-    # top = (X >= 93) & (X <= 108)
-    # top &= (Y - 40)**2 <= eps**2
+    # --- Define the Fourth Entry 5 as a semi-algebraic set ---
+    top = (X >= 93) & (X <= 108)
+    top &= (Y - 40)**2 <= eps**2
 
-    # mid = (X - 93)**2 <= eps**2
-    # mid &= (Y >= 30) & (Y <= 40)
+    mid = (X - 93)**2 <= eps**2
+    mid &= (Y >= 30) & (Y <= 40)
 
-    # bottom = (((X-3)-93)**2 + (Y-20)**2 >= (10-eps/1.5)**2)
-    # bottom &= (((X-3)-93)**2 + (Y-20)**2 <= (10+eps/1.5)**2)
-    # bottom &= (X >= 93) 
-    # bottom &= (Y >= 10) & (Y <= 35)
+    bottom = (((X-3)-93)**2 + (Y-20)**2 >= (10-eps/1.5)**2)
+    bottom &= (((X-3)-93)**2 + (Y-20)**2 <= (10+eps/1.5)**2)
+    bottom &= (X >= 93) 
+    bottom &= (Y >= 10) & (Y <= 35)
 
-    # E4 = top | mid | bottom
+    E4 = top | mid | bottom
 
-    # # --- Define the Fifth Entry 7 as a semi-algebraic set ---
-    # top = (X >= 115) & (X <= 135)
-    # top &= (Y - 40)**2 <= eps**2
+    # --- Define the Fifth Entry 7 as a semi-algebraic set ---
+    top = (X >= 115) & (X <= 135)
+    top &= (Y - 40)**2 <= eps**2
 
-    # right_diag = (Y - (2*(X - 135) + 40))**2 <= 2*eps**2
-    # right_diag &= (X >= 115) & (X <= 135)
-    # right_diag &= (Y >= 10) & (Y <= 40)
+    right_diag = (Y - (2*(X - 135) + 40))**2 <= 2*eps**2
+    right_diag &= (X >= 115) & (X <= 135)
+    right_diag &= (Y >= 10) & (Y <= 40)
 
-    # E5 = top | right_diag
+    E5 = top | right_diag
 
-    # # --- Define the Sixth Entry 7 as a semi-algebraic set ---
-    # top = (X >= 145) & (X <= 165)
-    # top &= (Y - 40)**2 <= eps**2
+    # --- Define the Sixth Entry 7 as a semi-algebraic set ---
+    top = (X >= 145) & (X <= 165)
+    top &= (Y - 40)**2 <= eps**2
 
-    # right_diag = (Y - (2*(X - 165) + 40))**2 <= 2*eps**2
-    # right_diag &= (X >= 145) & (X <= 165)
-    # right_diag &= (Y >= 10) & (Y <= 40)
+    right_diag = (Y - (2*(X - 165) + 40))**2 <= 2*eps**2
+    right_diag &= (X >= 145) & (X <= 165)
+    right_diag &= (Y >= 10) & (Y <= 40)
 
-    # E6 = top | right_diag
+    E6 = top | right_diag
 
     # --- Define fcn to generate boundary  ---
     def get_outer_ring(mask, r=clearance):
         """
         Generate collision boundary
         """
+        r = int(np.ceil(r))
         expanded = np.zeros_like(mask, dtype=bool)
 
         rows, cols = mask.shape
@@ -425,7 +433,7 @@ def draw_obstacle_course(order, clearance):
         plt.contourf(X_plot, Y_plot, all_barriers, levels=[0.5, 1], colors=['yellow'])
         plt.gca().set_aspect('equal')
         plt.xlim(0, 600)
-        plt.ylim(0, 250)
+        plt.ylim(0, 300)
         plt.grid(True)
         plt.title("MM 2577 as a Semi-Algebraic Set")
 
@@ -442,7 +450,7 @@ def get_inputs():
         # have the user input the start and goal positions
         start_str = input("Choose starting x,y,theta coordinates: ")
         goal_str = input("Choose goal x,y coordinates: ")
-        clearance = input("Choose the clearance around the obstacles in mm(also is the robot's radius):")
+        clearance = input("Choose the clearance around the obstacles in mm:")
         rpm_str = input("Choose the rpm values (RPM1, RPM2) for the wheels:")
         # split into the x and y coords
         try:
@@ -462,11 +470,11 @@ def get_inputs():
             continue
 
         # boundary check
-        if not (0 <= sx < 600 and 0 <= sy < 250):
+        if not (0 <= sx < 600 and 0 <= sy < 300):
             print("Start node outside map.")
             continue
 
-        if not (0 <= gx < 600 and 0 <= gy < 250):
+        if not (0 <= gx < 600 and 0 <= gy < 300):
             print("Goal node outside map.")
             continue
 
@@ -513,6 +521,18 @@ if __name__ == "__main__":
     # get user inputs
     start_pos, goal_pos, clearance, RPM1, RPM2 = get_inputs()
 
+    # impose scaling to speed up solution (instead of a 4000 x 2000 grid, use 600 x 300 and scale
+    # everything appropriately)
+    # include the radius of the robot in the clearance
+    scale = 0.15
+
+    # define robot radius and apply scaling
+    r_bot = 170  
+    r_bot = r_bot * scale
+
+    # re-define the clearance around the obstacles to include the turtle bot's size
+    clearance += r_bot
+
     # construct obstacle course
     all_collisions = draw_obstacle_course(order, clearance)
 
@@ -521,7 +541,7 @@ if __name__ == "__main__":
 
 
     # run algorithm
-    t_init, t_fin = run_AStar(start_pos, goal_pos, all_collisions, clearance)
+    t_init, t_fin = run_AStar(start_pos, goal_pos, all_collisions, clearance, scale)
 
     # # evaluate time for algorithm to run
     # dt = t_fin - t_init
