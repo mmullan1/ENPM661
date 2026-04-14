@@ -64,34 +64,9 @@ def cost(Xi, Yi, Thetai, UL, UR, all_collisions):
 
     Thetan = math.degrees(Thetan)
     return Xn, Yn, Thetan, D
-
-# def cost(Xi,Yi,Thetai,UL,UR):
-#     t = 0
-#     r = 33
-#     L = 28.7
-#     dt = 0.1
-#     Xn=Xi
-#     Yn=Yi
-#     Thetan = 3.14 * Thetai / 180
-
-#     # print(f"UL: {UL}, UR: {UR}")
-
-#     # Xi, Yi,Thetai: Input point's coordinates
-#     # Xs, Ys: Start point coordinates for plot function
-#     # Xn, Yn, Thetan: End point coordintes
-#     D=0
-#     while t<1:
-#         t = t + dt
-#         Delta_Xn = 0.5*r * (UL + UR) * math.cos(Thetan) * dt
-#         Delta_Yn = 0.5*r * (UL + UR) * math.sin(Thetan) * dt
-#         Thetan += (r / L) * (UR - UL) * dt
-#         D=D+ math.sqrt(math.pow((0.5*r * (UL + UR) * math.cos(Thetan) * dt),2)+math.pow((0.5*r * (UL + UR) * math.sin(Thetan) * dt),2))
-#         Xn += Delta_Xn
-#         Yn += Delta_Yn
-#     Thetan = 180 * (Thetan) / 3.14
-#     return Xn, Yn, Thetan, D
     
     
+ #-----------------------------------------------------------   
 def run_actions(Xi, Yi, Thetai, RPM1, RPM2, all_collisions):
     actions=[[0, RPM1], [RPM1, 0],[RPM1, RPM1],[0, RPM2],[RPM2, 0],[RPM2, RPM2], [RPM1, RPM2], [RPM2, RPM1]]
     actions_set = []
@@ -109,6 +84,17 @@ def discretize(node):
 
     ix = int(np.floor(x / 0.5 + 0.5))   # nearest 0.5 bin
     iy = int(np.floor(y / 0.5 + 0.5))
+    itheta = int((theta % 360) // 30)   # 0.11
+
+    return (ix, iy, itheta)
+
+#-----------------------------------------------------------
+def grid_index(node):
+
+    x, y, theta = node
+
+    ix = int(np.floor(x / 2 + 0.5))   # nearest 2 bin
+    iy = int(np.floor(y / 2 + 0.5))
     itheta = int((theta % 360) // 30)   # 0.11
 
     return (ix, iy, itheta)
@@ -137,7 +123,7 @@ def run_AStar(start_pos, goal_pos, all_collisions, clearance, RPM1, RPM2):
     # print(f"CHILD_T: {child_t}")
 
     # discretize child_t
-    child_t_disc = discretize(child_t)
+    child_t_disc = grid_index(child_t)
     info = (child_t_disc, child_t)
 
     # initialize cost to come and total cost
@@ -209,18 +195,21 @@ def generate_possible_moves(c2c, actual_state, goal_pos, all_collisions, RPM1, R
             new_state = (x, y, theta)
 
             # discretize new position
-            new_state_disc = discretize(new_state)
+            new_state_disc = grid_index(new_state)
             x_d, y_d, theta_d = new_state_disc
 
             # update cost
             new_c2c = c2c + D
             ct = new_c2c + np.sqrt((x - goal_pos[0])**2 + (y - goal_pos[1])**2)
 
+            new_state_disc_c = discretize(new_state)
+            x_c, y_c, theta_c = new_state_disc_c
+
             # check boundaries
-            if x_d < 0 or x_d >= all_collisions.shape[1] or y_d < 0 or y_d >= all_collisions.shape[0]:
+            if x_c < 0 or x_c >= all_collisions.shape[1] or y_c < 0 or y_c >= all_collisions.shape[0]:
                 continue
 
-            if all_collisions[y_d, x_d]:
+            if all_collisions[y_c, x_c]:
                 continue
 
             # add to open list if cost is less than previous entry or if it isnt already in the open list
@@ -242,7 +231,7 @@ def generate_path(goal_pos, start_pos, final_loc, clearance):
 
     while parent is not None:
         order.append(parent)
-        parent, cost, child = open_cost[discretize(parent)]
+        parent, cost, child = open_cost[grid_index(parent)]
 
     draw_obstacle_course(order, clearance)
     return order[::-1]
@@ -277,20 +266,20 @@ def animate_search_and_path(order, explored_nodes, t_fin):
     step = max(1, len(explored_nodes) // max_search_segments)
 
     # batch size for plotting several sampled segments at once
-    search_batch = 500
+    search_batch = 50
     sx, sy = [], []
 
     sampled_indices = range(0, len(explored_nodes), step)
 
     for count, k in enumerate(sampled_indices):
         node = explored_nodes[k]
-        disc_node = discretize(node)
+        disc_node = grid_index(node)
 
         if disc_node in open_cost:
             parent, _, _ = open_cost[disc_node]
 
             if parent is not None:
-                parent_disc = discretize(parent)
+                parent_disc = grid_index(parent)
 
                 if parent_disc in open_cost:
                     parent_state = open_cost[parent_disc][2]
