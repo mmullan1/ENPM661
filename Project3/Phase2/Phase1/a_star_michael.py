@@ -22,38 +22,81 @@ def reset_search_state():
 
 #-----------------------------------------------------------
 # Differential Drive Constraints and Action Primitives
-def cost(Xi,Yi,Thetai,UL,UR, scale):
+def cost(Xi, Yi, Thetai, UL, UR, all_collisions):
     t = 0
-    r = 0.033*scale
-    L = 0.287*scale
+    r = 3.3      # cm
+    L = 28.7     # cm
     dt = 0.1
-    Xn=Xi
-    Yn=Yi
-    Thetan = 3.14 * Thetai / 180
 
-    # print(f"UL: {UL}, UR: {UR}")
+    # convert rpm -> rad/s
+    UL = UL * 2 * math.pi / 60
+    UR = UR * 2 * math.pi / 60
 
-    # Xi, Yi,Thetai: Input point's coordinates
-    # Xs, Ys: Start point coordinates for plot function
-    # Xn, Yn, Thetan: End point coordintes
-    D=0
-    while t<1:
-        t = t + dt
-        Delta_Xn = 0.5*r * (UL + UR) * math.cos(Thetan) * dt
-        Delta_Yn = 0.5*r * (UL + UR) * math.sin(Thetan) * dt
-        Thetan += (r / L) * (UR - UL) * dt
-        D=D+ math.sqrt(math.pow((0.5*r * (UL + UR) * math.cos(Thetan) * dt),2)+math.pow((0.5*r * (UL + UR) * math.sin(Thetan) * dt),2))
+    Xn = Xi
+    Yn = Yi
+    Thetan = math.radians(Thetai)
+
+    D = 0
+    while t < 0.5:
+        t += dt
+
+        vx = 0.5 * r * (UL + UR)
+        w = (r / L) * (UR - UL)
+
+        Delta_Xn = vx * math.cos(Thetan) * dt
+        Delta_Yn = vx * math.sin(Thetan) * dt
+
         Xn += Delta_Xn
         Yn += Delta_Yn
-    Thetan = 180 * (Thetan) / 3.14
+        Thetan += w * dt
+
+        D += math.sqrt(Delta_Xn**2 + Delta_Yn**2)
+
+
+        # check intermediate collision
+        x_d, y_d, _ = discretize((Xn, Yn, math.degrees(Thetan)))
+
+        if x_d < 0 or x_d >= all_collisions.shape[1] or y_d < 0 or y_d >= all_collisions.shape[0]:
+            return None
+
+        if all_collisions[y_d, x_d]:
+            return None
+
+    Thetan = math.degrees(Thetan)
     return Xn, Yn, Thetan, D
+
+# def cost(Xi,Yi,Thetai,UL,UR):
+#     t = 0
+#     r = 33
+#     L = 28.7
+#     dt = 0.1
+#     Xn=Xi
+#     Yn=Yi
+#     Thetan = 3.14 * Thetai / 180
+
+#     # print(f"UL: {UL}, UR: {UR}")
+
+#     # Xi, Yi,Thetai: Input point's coordinates
+#     # Xs, Ys: Start point coordinates for plot function
+#     # Xn, Yn, Thetan: End point coordintes
+#     D=0
+#     while t<1:
+#         t = t + dt
+#         Delta_Xn = 0.5*r * (UL + UR) * math.cos(Thetan) * dt
+#         Delta_Yn = 0.5*r * (UL + UR) * math.sin(Thetan) * dt
+#         Thetan += (r / L) * (UR - UL) * dt
+#         D=D+ math.sqrt(math.pow((0.5*r * (UL + UR) * math.cos(Thetan) * dt),2)+math.pow((0.5*r * (UL + UR) * math.sin(Thetan) * dt),2))
+#         Xn += Delta_Xn
+#         Yn += Delta_Yn
+#     Thetan = 180 * (Thetan) / 3.14
+#     return Xn, Yn, Thetan, D
     
     
-def run_actions(Xi, Yi, Thetai, RPM1, RPM2, scale):
+def run_actions(Xi, Yi, Thetai, RPM1, RPM2, all_collisions):
     actions=[[0, RPM1], [RPM1, 0],[RPM1, RPM1],[0, RPM2],[RPM2, 0],[RPM2, RPM2], [RPM1, RPM2], [RPM2, RPM1]]
     actions_set = []
     for action in actions:
-        k=cost(Xi,Yi, Thetai, action[0], action[1], scale) 
+        k=cost(Xi,Yi, Thetai, action[0], action[1], all_collisions) 
         # print(k)
         actions_set.append(k)
     return actions_set
@@ -72,7 +115,7 @@ def discretize(node):
 
 
 #-----------------------------------------------------------
-def run_AStar(start_pos, goal_pos, all_collisions, clearance, scale, RPM1, RPM2):
+def run_AStar(start_pos, goal_pos, all_collisions, clearance, RPM1, RPM2):
     """
     Initialize the alg by adding the start state to the open list and then 
     calling the function to compare against the goal state. A* will continue 
@@ -108,12 +151,12 @@ def run_AStar(start_pos, goal_pos, all_collisions, clearance, scale, RPM1, RPM2)
     heapq.heappush(open_list, (ct, info))
 
     # start loop
-    t_fin = compare_against_goal(goal_pos, start_pos, all_collisions, clearance, scale, RPM1, RPM2)
+    t_fin = compare_against_goal(goal_pos, start_pos, all_collisions, clearance, RPM1, RPM2)
 
     return t_init, t_fin
 
 #-----------------------------------------------------------
-def compare_against_goal(goal_pos, start_pos, all_collisions, clearance, scale, RPM1, RPM2):
+def compare_against_goal(goal_pos, start_pos, all_collisions, clearance, RPM1, RPM2):
     """
     The loop that runs until the open list is empty
     """
@@ -140,11 +183,11 @@ def compare_against_goal(goal_pos, start_pos, all_collisions, clearance, scale, 
             closed_list.add(child_t_disc)
             explored_nodes.append(child_t)
 
-            generate_possible_moves(c2c, actual_state, goal_pos, all_collisions, scale, RPM1, RPM2)
+            generate_possible_moves(c2c, actual_state, goal_pos, all_collisions, RPM1, RPM2)
 
     # return t_fin
 #-----------------------------------------------------------
-def generate_possible_moves(c2c, actual_state, goal_pos, all_collisions, scale, RPM1, RPM2):
+def generate_possible_moves(c2c, actual_state, goal_pos, all_collisions, RPM1, RPM2):
     """
     From the previous location, generate possible next steps,
     evaluate to ensure they aren't in a collision or out of
@@ -154,35 +197,36 @@ def generate_possible_moves(c2c, actual_state, goal_pos, all_collisions, scale, 
     """
     global open_list
     # print(actual_state)
-    Actions_Set = run_actions(actual_state[0], actual_state[1], actual_state[2], RPM1, RPM2, scale)
+    Actions_Set = run_actions(actual_state[0], actual_state[1], actual_state[2], RPM1, RPM2, all_collisions)
     # print(f"ACTIONS_SET: {Actions_Set}")
 
     # run through all possible actions
     for action in Actions_Set:
         # print(f"ACTION: {action}")
         # generate new position after action
-        x, y, theta, D = action
-        new_state = (x, y, theta)
+        if action is not None:
+            x, y, theta, D = action
+            new_state = (x, y, theta)
 
-        # discretize new position
-        new_state_disc = discretize(new_state)
-        x_d, y_d, theta_d = new_state_disc
+            # discretize new position
+            new_state_disc = discretize(new_state)
+            x_d, y_d, theta_d = new_state_disc
 
-        # update cost
-        new_c2c = c2c + D
-        ct = new_c2c + np.sqrt((x - goal_pos[0])**2 + (y - goal_pos[1])**2)
+            # update cost
+            new_c2c = c2c + D
+            ct = new_c2c + np.sqrt((x - goal_pos[0])**2 + (y - goal_pos[1])**2)
 
-        # check boundaries
-        if x_d < 0 or x_d >= all_collisions.shape[1] or y_d < 0 or y_d >= all_collisions.shape[0]:
-            continue
+            # check boundaries
+            if x_d < 0 or x_d >= all_collisions.shape[1] or y_d < 0 or y_d >= all_collisions.shape[0]:
+                continue
 
-        if all_collisions[y_d, x_d]:
-            continue
+            if all_collisions[y_d, x_d]:
+                continue
 
-        # add to open list if cost is less than previous entry or if it isnt already in the open list
-        if new_state_disc not in open_cost or open_cost.get(new_state_disc)[1] > new_c2c:
-            open_cost[new_state_disc] = (actual_state, new_c2c, new_state)
-            heapq.heappush(open_list, (ct, (new_state_disc, new_state)))
+            # add to open list if cost is less than previous entry or if it isnt already in the open list
+            if new_state_disc not in open_cost or open_cost.get(new_state_disc)[1] > new_c2c:
+                open_cost[new_state_disc] = (actual_state, new_c2c, new_state)
+                heapq.heappush(open_list, (ct, (new_state_disc, new_state)))
 
 #-----------------------------------------------------------
 def theta_equiv_dist(theta1, theta2):
@@ -229,11 +273,11 @@ def animate_search_and_path(order, explored_nodes, t_fin):
     # =========================================================
     # 1) Animate explored search tree (SPARSE)
     # =========================================================
-    max_search_segments = 100000
+    max_search_segments = 1000000
     step = max(1, len(explored_nodes) // max_search_segments)
 
     # batch size for plotting several sampled segments at once
-    search_batch = 50
+    search_batch = 500
     sx, sy = [], []
 
     sampled_indices = range(0, len(explored_nodes), step)
@@ -358,7 +402,7 @@ def draw_obstacle_course(order, clearance):
         in_half_plane(X - x0, Y - y0, -nx, -ny,  t/2)
     )
 
-    theta = np.deg2rad(20)
+    theta = np.deg2rad(30)
 
     # right endpoint from the schematic
     x0 = 200.0
@@ -526,10 +570,10 @@ if __name__ == "__main__":
     # impose scaling to speed up solution (instead of a 2000 x 4000 grid, use 200 x 400 and scale
     # everything appropriately)
     # include the radius of the robot in the clearance
-    scale = 0.1
+    
 
     # define robot radius and apply scaling
-    r_bot = 14.35 # cm
+    r_bot = 22 # cm
 
     # re-define the clearance around the obstacles to include the turtle bot's size
     clearance += r_bot
@@ -542,7 +586,7 @@ if __name__ == "__main__":
 
 
     # run algorithm
-    t_init, t_fin = run_AStar(start_pos, goal_pos, all_collisions, clearance, scale, RPM1, RPM2)
+    t_init, t_fin = run_AStar(start_pos, goal_pos, all_collisions, clearance, RPM1, RPM2)
 
     # # # evaluate time for algorithm to run
     # # dt = t_fin - t_init
