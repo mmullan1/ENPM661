@@ -12,6 +12,15 @@ open_list = []
 closed_list = set()
 
 #-----------------------------------------------------------
+# reset each time
+def reset_search_state():
+    global explored_nodes, open_cost, open_list, closed_list
+    explored_nodes = []
+    open_cost = {}
+    open_list = []
+    closed_list = set()
+
+#-----------------------------------------------------------
 # Differential Drive Constraints and Action Primitives
 def cost(Xi,Yi,Thetai,UL,UR, scale):
     t = 0
@@ -63,7 +72,7 @@ def discretize(node):
 
 
 #-----------------------------------------------------------
-def run_AStar(start_pos, goal_pos, all_collisions, clearance, scale):
+def run_AStar(start_pos, goal_pos, all_collisions, clearance, scale, RPM1, RPM2):
     """
     Initialize the alg by adding the start state to the open list and then 
     calling the function to compare against the goal state. A* will continue 
@@ -71,7 +80,7 @@ def run_AStar(start_pos, goal_pos, all_collisions, clearance, scale):
     """
     global t_init
     global open_list
-
+    reset_search_state()
     t_init = time.perf_counter()
 
 
@@ -90,7 +99,7 @@ def run_AStar(start_pos, goal_pos, all_collisions, clearance, scale):
 
     # initialize cost to come and total cost
     c2c = 0
-    ct = c2c + 10*np.sqrt((start_pos[0]-goal_pos[0])**2 + (start_pos[1]-goal_pos[1])**2)
+    ct = c2c + np.sqrt((start_pos[0]-goal_pos[0])**2 + (start_pos[1]-goal_pos[1])**2)
 
     # add to dictionary
     open_cost[child_t_disc] = (None, c2c, start_pos)
@@ -99,12 +108,12 @@ def run_AStar(start_pos, goal_pos, all_collisions, clearance, scale):
     heapq.heappush(open_list, (ct, info))
 
     # start loop
-    t_fin = compare_against_goal(goal_pos, start_pos, all_collisions, clearance, scale)
+    t_fin = compare_against_goal(goal_pos, start_pos, all_collisions, clearance, scale, RPM1, RPM2)
 
     return t_init, t_fin
 
 #-----------------------------------------------------------
-def compare_against_goal(goal_pos, start_pos, all_collisions, clearance, scale):
+def compare_against_goal(goal_pos, start_pos, all_collisions, clearance, scale, RPM1, RPM2):
     """
     The loop that runs until the open list is empty
     """
@@ -131,11 +140,11 @@ def compare_against_goal(goal_pos, start_pos, all_collisions, clearance, scale):
             closed_list.add(child_t_disc)
             explored_nodes.append(child_t)
 
-            generate_possible_moves(start_pos, parent_disc_state, c2c, actual_state, all_collisions, scale)
+            generate_possible_moves(c2c, actual_state, goal_pos, all_collisions, scale, RPM1, RPM2)
 
     # return t_fin
 #-----------------------------------------------------------
-def generate_possible_moves(start_pos, parent_disc_state, c2c, actual_state, all_collisions, scale):
+def generate_possible_moves(c2c, actual_state, goal_pos, all_collisions, scale, RPM1, RPM2):
     """
     From the previous location, generate possible next steps,
     evaluate to ensure they aren't in a collision or out of
@@ -161,16 +170,12 @@ def generate_possible_moves(start_pos, parent_disc_state, c2c, actual_state, all
 
         # update cost
         new_c2c = c2c + D
-        ct = new_c2c + 10*np.sqrt((x - goal_pos[0])**2 + (y - goal_pos[1])**2)
+        ct = new_c2c + np.sqrt((x - goal_pos[0])**2 + (y - goal_pos[1])**2)
 
         # check boundaries
         if x_d < 0 or x_d >= all_collisions.shape[1] or y_d < 0 or y_d >= all_collisions.shape[0]:
             continue
 
-        if all_collisions[y_d, x_d]:
-            continue
-
-        # check collisions
         if all_collisions[y_d, x_d]:
             continue
 
@@ -201,35 +206,40 @@ def generate_path(goal_pos, start_pos, final_loc, clearance):
 #-----------------------------------------------------------
 def animate_search_and_path(order, explored_nodes, t_fin):
     """
-    Animate the search and final path
+    Animate the explored search tree sparsely and the final path smoothly.
+
+    Search animation:
+        - Downsamples automatically
+        - Draws at most 10,000 explored segments
+
+    Final path animation:
+        - Draws every segment
+        - Uses line segments instead of quiver for smoother playback
     """
     global t_init
-    plt.ioff()
+
+    plt.ion()
+    ax = plt.gca()
 
     # --- Timing ---
     dt = t_fin - t_init
     print(f"The algorithm takes {dt:.3f} s to run")
     print(f"EXPLORED NODES: {len(explored_nodes)}")
 
-    # --- Animation tuning ---
-    num_updates = 75
-    growth_rate = max(1, len(explored_nodes) // num_updates)
+    # =========================================================
+    # 1) Animate explored search tree (SPARSE)
+    # =========================================================
+    max_search_segments = 100000
+    step = max(1, len(explored_nodes) // max_search_segments)
 
-    base_pause = 0.001
-    pause_time = min(0.05, base_pause * growth_rate)
+    # batch size for plotting several sampled segments at once
+    search_batch = 50
+    sx, sy = [], []
 
-    # --- Batch storage for quiver ---
-    qx, qy, qu, qv = [], [], [], []
+    sampled_indices = range(0, len(explored_nodes), step)
 
-
-
-    # # --- Mark start and goal from final path ---
-    # if order:
-    #     plt.plot(order[-1][0], order[-1][1], 'go', markersize=6)  # start
-    #     plt.plot(order[0][0],  order[0][1],  'mo', markersize=6)  # goal
-
-    # --- Animate search tree ---
-    for k, node in enumerate(explored_nodes):
+    for count, k in enumerate(sampled_indices):
+        node = explored_nodes[k]
         disc_node = discretize(node)
 
         if disc_node in open_cost:
@@ -241,150 +251,140 @@ def animate_search_and_path(order, explored_nodes, t_fin):
                 if parent_disc in open_cost:
                     parent_state = open_cost[parent_disc][2]
 
-                    qx.append(parent_state[0])
-                    qy.append(parent_state[1])
-                    qu.append(node[0] - parent_state[0])
-                    qv.append(node[1] - parent_state[1])
+                    # store one line segment, with None separator
+                    sx.extend([parent_state[0], node[0], None])
+                    sy.extend([parent_state[1], node[1], None])
 
-        if k % growth_rate == 0 or k == len(explored_nodes) - 1:
-            if qx:  # only draw if there's data
-                plt.quiver(qx, qy, qu, qv,
-                           angles='xy', scale_units='xy', scale=1,
-                           color='b', width=0.002)
+        # draw every batch
+        if (count + 1) % search_batch == 0 or k >= len(explored_nodes) - step:
+            if sx:
+                ax.plot(sx, sy, 'b-', linewidth=0.5)
+                plt.draw()
+                plt.pause(0.001)
+                sx.clear()
+                sy.clear()
 
-            plt.draw()
-            plt.pause(pause_time)
+    # =========================================================
+    # 2) Animate final path (FULL)
+    # =========================================================
+    order = order[::-1]   # safer than in-place reverse
 
-            qx.clear()
-            qy.clear()
-            qu.clear()
-            qv.clear()
+    path_batch = 3
+    px, py = [], []
 
-    # --- Animate final path ---
-    order.reverse()
     for i in range(1, len(order)):
-        x0, y0 = order[i-1][0], order[i-1][1]
+        x0, y0 = order[i - 1][0], order[i - 1][1]
         x1, y1 = order[i][0], order[i][1]
 
-        dx = x1 - x0
-        dy = y1 - y0
+        px.extend([x0, x1, None])
+        py.extend([y0, y1, None])
 
-        plt.quiver(x0, y0,
-                  dx, dy,
-                  angles='xy', scale_units='xy', scale=1,
-                  color='r', width=0.004)
+        if i % path_batch == 0 or i == len(order) - 1:
+            ax.plot(px, py, 'r-', linewidth=2)
+            plt.draw()
+            plt.pause(0.001)
+            px.clear()
+            py.clear()
 
-        plt.draw()
-        plt.pause(0.001)
+    plt.draw()
 #-----------------------------------------------------------
 def draw_obstacle_course(order, clearance):
     """
-    Construct a 600x300 MatPlotLib graph with the obstacle "MM 2577" (green)
+    Construct a 400x200 MatPlotLib graph with the obstacle "MM 2577" (green)
     and add a boundary of extra clearance + 170 mm (robot radius),
     but scaled by a factor of 1/8(yellow)
     """
     # Grid
-    x = np.arange(0, 600, 0.5)
-    y = np.arange(0, 300, 0.5)
+    x = np.arange(0, 200, 0.5)
+    y = np.arange(0, 400, 0.5)
     X, Y = np.meshgrid(x, y)
 
     X_plot = X
     Y_plot = Y
 
-    Sx = 600/180
-    Sy = 300/50
-
-    X = X/Sx
-    Y = Y/Sy
-    # Thickness parameter
-    eps = 1
-
-    # --- Define the First Entry M as a semi-algebraic set ---
-    left_bar = (X - 5)**2 <= eps**2
-    left_bar &= (Y >= 10) & (Y <= 40)
-
-    right_bar = (X - 25)**2 <= eps**2
-    right_bar &= (Y >= 10) & (Y <= 40)
-
-    left_diag = (Y - (-2*(X - 5) + 40))**2 <= eps**2
-    left_diag &= (X >= 5) & (X <= 15)
-    left_diag &= (Y >= 20) & (Y <= 40)
+    # --- Fcn for constructing half planes ---
+    def in_half_plane(x, y, A, B, C):
+        """
+        Defines a closed half-plane Ax + By <= C
+        """
+        return A * x + B * y <= C
 
 
-    right_diag = (Y - (2*(X - 25) + 40))**2 <= eps**2
-    right_diag &= (X >= 15) & (X <= 25)
-    right_diag &= (Y >= 20) & (Y <= 40)
+    # Cube 1
+    cube1 = (
+        in_half_plane(X, Y, -1, 0, -139.8) &  # x >= 139.8
+        in_half_plane(X, Y,  1, 0,  170.2) &  # x <= 170.2
+        in_half_plane(X, Y,  0,-1, -26.8) &   # y >= 26.8
+        in_half_plane(X, Y,  0, 1,  57.2)     # y <= 57.2
+    )
 
-    E1 = left_bar | right_bar | left_diag | right_diag
+    cube2 = (
+        in_half_plane(X, Y, -1, 0, -10.8) &  # x >= 10.8
+        in_half_plane(X, Y,  1, 0,  41.2) &  # x <= 41.2
+        in_half_plane(X, Y,  0,-1, -204.8) &   # y >= 204.8
+        in_half_plane(X, Y,  0, 1,  235.2)     # y <= 235.2
+    )
 
-    # --- Define the Second Entry M as a semi-algebraic set ---
-    left_bar2 = ((X-30) - 5)**2 <= eps**2
-    left_bar2 &= (Y >= 10) & (Y <= 40)
+    cube3 = (
+        in_half_plane(X, Y, -1, 0, -29.8) &  # x >= 29.8
+        in_half_plane(X, Y,  1, 0,  60.2) &  # x <= 60.2
+        in_half_plane(X, Y,  0,-1, -118.3) &   # y >= 118.3
+        in_half_plane(X, Y,  0, 1,  148.7)     # y <= 148.7
+    )
 
-    right_bar2 = ((X-30) - 25)**2 <= eps**2
-    right_bar2 &= (Y >= 10) & (Y <= 40)
+    wall1 = (
+        in_half_plane(X, Y, -1, 0, 0) &  # x >= 0
+        in_half_plane(X, Y,  1, 0,  145) &  # x <= 145
+        in_half_plane(X, Y,  0,-1, -290) &   # y >= 290
+        in_half_plane(X, Y,  0, 1,  295)     # y <= 295
+    )
 
-    left_diag2 = (Y - (-2*((X-30) - 5) + 40))**2 <= eps**2
-    left_diag2 &= ((X-30) >= 5) & ((X-30) <= 15)
-    left_diag2 &= (Y >= 20) & (Y <= 40)
+    # midpoint from diagram
+    theta = np.deg2rad(30)
 
-    right_diag2 = (Y - (2*((X-30) - 25) + 40))**2 <= eps**2
-    right_diag2 &= ((X-30) >= 15) & ((X-30) <= 25)
-    right_diag2 &= (Y >= 20) & (Y <= 40)
+    x0 = 0 
+    y0 = 38.4
 
-    E2 = left_bar2 | right_bar2 | left_diag2 | right_diag2
+    L = 140.0
+    t = 5.0
+
+    ux, uy = np.cos(theta), np.sin(theta)      # along-wall
+    nx, ny = -np.sin(theta), np.cos(theta)     # normal
+
+    wall2 = (
+        in_half_plane(X - x0, Y - y0,  ux,  uy,  L)   &   # 0 <= (p-p0)·u <= L
+        in_half_plane(X - x0, Y - y0, -ux, -uy,  0)   &
+        in_half_plane(X - x0, Y - y0,  nx,  ny,  t/2) &
+        in_half_plane(X - x0, Y - y0, -nx, -ny,  t/2)
+    )
+
+    theta = np.deg2rad(20)
+
+    # right endpoint from the schematic
+    x0 = 200.0
+    y0 = 126.0
+
+    L = 135.0
+    t = 5.0
+
+    # along-wall direction: from right endpoint toward left/up
+    ux, uy = -np.cos(theta), np.sin(theta)
+
+    # normal direction
+    nx, ny = -uy, ux
+
+    wall3 = (
+        in_half_plane(X - x0, Y - y0,  ux,  uy,  L)   &   # 0 <= (p-p0)·u <= L
+        in_half_plane(X - x0, Y - y0, -ux, -uy,  0)   &
+        in_half_plane(X - x0, Y - y0,  nx,  ny,  t/2) &
+        in_half_plane(X - x0, Y - y0, -nx, -ny,  t/2)
+    )
+
+    all_obstacles = cube1 | cube2 | cube3 | wall1 | wall2 | wall3
 
 
-    # --- Define the Third Entry 2 as a semi-algebraic set ---
-    top = ((X-75)**2 + (Y-32)**2 >= (9-eps/2)**2)
-    top &= ((X-75)**2 + (Y-32)**2 <= (9+eps/2)**2)
-    top &= (X >= 66) & (X <= 84)
-    top &= (Y >= 32)
 
-    diag = (Y - (1.11*(X-84) + 32))**2 <= eps**2
-    diag &= (X >= 66) & (X <= 84)
-    diag &= (Y >= 12) & (Y <= 32)
-
-    bottom = (X >= 66) & (X <= 84)
-    bottom &= (Y - 12)**2 <= eps**2
-
-    E3 = top | diag | bottom
-        
-    # --- Define the Fourth Entry 5 as a semi-algebraic set ---
-    top = (X >= 93) & (X <= 108)
-    top &= (Y - 40)**2 <= eps**2
-
-    mid = (X - 93)**2 <= eps**2
-    mid &= (Y >= 30) & (Y <= 40)
-
-    bottom = (((X-3)-93)**2 + (Y-20)**2 >= (10-eps/1.5)**2)
-    bottom &= (((X-3)-93)**2 + (Y-20)**2 <= (10+eps/1.5)**2)
-    bottom &= (X >= 93) 
-    bottom &= (Y >= 10) & (Y <= 35)
-
-    E4 = top | mid | bottom
-
-    # --- Define the Fifth Entry 7 as a semi-algebraic set ---
-    top = (X >= 115) & (X <= 135)
-    top &= (Y - 40)**2 <= eps**2
-
-    right_diag = (Y - (2*(X - 135) + 40))**2 <= 2*eps**2
-    right_diag &= (X >= 115) & (X <= 135)
-    right_diag &= (Y >= 10) & (Y <= 40)
-
-    E5 = top | right_diag
-
-    # --- Define the Sixth Entry 7 as a semi-algebraic set ---
-    top = (X >= 145) & (X <= 165)
-    top &= (Y - 40)**2 <= eps**2
-
-    right_diag = (Y - (2*(X - 165) + 40))**2 <= 2*eps**2
-    right_diag &= (X >= 145) & (X <= 165)
-    right_diag &= (Y >= 10) & (Y <= 40)
-
-    E6 = top | right_diag
-
-    # --- Define fcn to generate boundary  ---
+    # # --- Define fcn to generate boundary  ---
     def get_outer_ring(mask, r=clearance):
         """
         Generate collision boundary
@@ -412,18 +412,16 @@ def draw_obstacle_course(order, clearance):
         return outer_ring
     
     # --- Generate boundaries  ---
-    E1_barrier = get_outer_ring(E1, r=2*clearance)
-    E2_barrier = get_outer_ring(E2, r=2*clearance)
-    E3_barrier = get_outer_ring(E3, r=2*clearance)
-    E4_barrier = get_outer_ring(E4, r=2*clearance)
-    E5_barrier = get_outer_ring(E5, r=2*clearance)
-    E6_barrier = get_outer_ring(E6, r=2*clearance)
+    cube1_barrier = get_outer_ring(cube1, r=clearance)
+    cube2_barrier = get_outer_ring(cube2, r=clearance)
+    cube3_barrier = get_outer_ring(cube3, r=clearance)
+    wall1_barrier = get_outer_ring(wall1, r=clearance)
+    wall2_barrier = get_outer_ring(wall2, r=clearance)
+    wall3_barrier = get_outer_ring(wall3, r=clearance)
 
-    all_obstacles = E1 | E2 | E3 | E4 | E5 | E6
-    all_barriers  = E1_barrier | E2_barrier | E3_barrier | E4_barrier | E5_barrier | E6_barrier
+    all_barriers  = cube1_barrier | cube2_barrier | cube3_barrier | wall1_barrier | wall2_barrier | wall3_barrier
 
     all_collisions = all_obstacles | all_barriers
-
     # initialize the plot the first time this fcn is called,
     # but not the second time
     if order is None:
@@ -432,12 +430,15 @@ def draw_obstacle_course(order, clearance):
         plt.contourf(X_plot, Y_plot, all_obstacles, levels=[0.5, 1])
         plt.contourf(X_plot, Y_plot, all_barriers, levels=[0.5, 1], colors=['yellow'])
         plt.gca().set_aspect('equal')
-        plt.xlim(0, 600)
-        plt.ylim(0, 300)
+        plt.xlim(0, 200)
+        plt.ylim(0, 400)
         plt.grid(True)
-        plt.title("MM 2577 as a Semi-Algebraic Set")
+        plt.title("Project 3 Phase 2 Obstacle Course")
 
     return all_collisions
+
+
+
 
 #-----------------------------------------------------------
 def get_inputs():
@@ -470,11 +471,11 @@ def get_inputs():
             continue
 
         # boundary check
-        if not (0 <= sx < 600 and 0 <= sy < 300):
+        if not (0 <= sx < 200 and 0 <= sy < 400):
             print("Start node outside map.")
             continue
 
-        if not (0 <= gx < 600 and 0 <= gy < 300):
+        if not (0 <= gx < 200 and 0 <= gy < 400):
             print("Goal node outside map.")
             continue
 
@@ -488,7 +489,7 @@ def get_inputs():
         return start_pos, goal_pos, clearance, rpm1, rpm2
     
 #-----------------------------------------------------------
-def check_collisions(all_collisions, start_pos, goal_pos, order):
+def check_collisions(all_collisions, start_pos, goal_pos, order, clearance, RPM1, RPM2, r_bot):
     while True:
         sx, sy, _ = start_pos
         gx, gy, _ = goal_pos
@@ -505,30 +506,30 @@ def check_collisions(all_collisions, start_pos, goal_pos, order):
             plt.close()
 
         else:
-            # valid → break loop
-            return start_pos, goal_pos, all_collisions
+            return start_pos, goal_pos, all_collisions, clearance, RPM1, RPM2
 
         # only runs if there WAS a collision
-        start_pos, goal_pos, clearance, RPM1, RPM2 = get_inputs()
+        start_pos, goal_pos, clearance_user, RPM1, RPM2 = get_inputs()
+        clearance = clearance_user + r_bot
         all_collisions = draw_obstacle_course(order, clearance)
-#----------Run dijkstra----------------------
+
+
 if __name__ == "__main__":
 
 
     # generate all collision spaces
     order = None
-
+    # draw_obstacle_course(order, clearance=2)
     # get user inputs
     start_pos, goal_pos, clearance, RPM1, RPM2 = get_inputs()
 
-    # impose scaling to speed up solution (instead of a 4000 x 2000 grid, use 600 x 300 and scale
+    # impose scaling to speed up solution (instead of a 2000 x 4000 grid, use 200 x 400 and scale
     # everything appropriately)
     # include the radius of the robot in the clearance
-    scale = 0.15
+    scale = 0.1
 
     # define robot radius and apply scaling
-    r_bot = 170  
-    r_bot = r_bot * scale
+    r_bot = 14.35 # cm
 
     # re-define the clearance around the obstacles to include the turtle bot's size
     clearance += r_bot
@@ -537,16 +538,16 @@ if __name__ == "__main__":
     all_collisions = draw_obstacle_course(order, clearance)
 
     # check for collisions
-    start_pos, goal_pos, all_collisions = check_collisions(all_collisions, start_pos, goal_pos, order)
+    start_pos, goal_pos, all_collisions, clearance, RPM1, RPM2 = check_collisions(all_collisions, start_pos, goal_pos, order, clearance, RPM1, RPM2, r_bot)
 
 
     # run algorithm
-    t_init, t_fin = run_AStar(start_pos, goal_pos, all_collisions, clearance, scale)
+    t_init, t_fin = run_AStar(start_pos, goal_pos, all_collisions, clearance, scale, RPM1, RPM2)
 
-    # # evaluate time for algorithm to run
-    # dt = t_fin - t_init
-    # print(f"The algorithm takes {dt} s to run")
+    # # # evaluate time for algorithm to run
+    # # dt = t_fin - t_init
+    # # print(f"The algorithm takes {dt} s to run")
 
-    # keep plot open after completion
+    # # keep plot open after completion
     plt.ioff()
     plt.show(block=True)
