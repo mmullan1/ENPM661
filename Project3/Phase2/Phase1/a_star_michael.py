@@ -54,7 +54,7 @@ def cost(Xi, Yi, Thetai, UL, UR, all_collisions):
 
 
         # check intermediate collision
-        x_d, y_d, _ = discretize((Xn, Yn, math.degrees(Thetan)))
+        x_d, y_d, _ = grid_index((Xn, Yn, math.degrees(Thetan)))
 
         if x_d < 0 or x_d >= all_collisions.shape[1] or y_d < 0 or y_d >= all_collisions.shape[0]:
             return None
@@ -78,7 +78,7 @@ def run_actions(Xi, Yi, Thetai, RPM1, RPM2, all_collisions):
 
 
 #-----------------------------------------------------------
-def discretize(node):
+def grid_index(node):
 
     x, y, theta = node
 
@@ -89,15 +89,16 @@ def discretize(node):
     return (ix, iy, itheta)
 
 #-----------------------------------------------------------
-def grid_index(node):
+def discretize(node):
 
     x, y, theta = node
 
-    ix = int(np.floor(x / 2 + 0.5))   # nearest 2 bin
-    iy = int(np.floor(y / 2 + 0.5))
+    ix = int(np.floor(x / 5 + 0.5))   # nearest 2 bin
+    iy = int(np.floor(y / 5 + 0.5))
     itheta = int((theta % 360) // 30)   # 0.11
 
     return (ix, iy, itheta)
+
 
 
 #-----------------------------------------------------------
@@ -123,7 +124,7 @@ def run_AStar(start_pos, goal_pos, all_collisions, clearance, RPM1, RPM2):
     # print(f"CHILD_T: {child_t}")
 
     # discretize child_t
-    child_t_disc = grid_index(child_t)
+    child_t_disc = discretize(child_t)
     info = (child_t_disc, child_t)
 
     # initialize cost to come and total cost
@@ -195,14 +196,14 @@ def generate_possible_moves(c2c, actual_state, goal_pos, all_collisions, RPM1, R
             new_state = (x, y, theta)
 
             # discretize new position
-            new_state_disc = grid_index(new_state)
+            new_state_disc = discretize(new_state)
             x_d, y_d, theta_d = new_state_disc
 
             # update cost
             new_c2c = c2c + D
             ct = new_c2c + np.sqrt((x - goal_pos[0])**2 + (y - goal_pos[1])**2)
 
-            new_state_disc_c = discretize(new_state)
+            new_state_disc_c = grid_index(new_state)
             x_c, y_c, theta_c = new_state_disc_c
 
             # check boundaries
@@ -231,7 +232,7 @@ def generate_path(goal_pos, start_pos, final_loc, clearance):
 
     while parent is not None:
         order.append(parent)
-        parent, cost, child = open_cost[grid_index(parent)]
+        parent, cost, child = open_cost[discretize(parent)]
 
     draw_obstacle_course(order, clearance)
     return order[::-1]
@@ -273,13 +274,13 @@ def animate_search_and_path(order, explored_nodes, t_fin):
 
     for count, k in enumerate(sampled_indices):
         node = explored_nodes[k]
-        disc_node = grid_index(node)
+        disc_node = discretize(node)
 
         if disc_node in open_cost:
             parent, _, _ = open_cost[disc_node]
 
             if parent is not None:
-                parent_disc = grid_index(parent)
+                parent_disc = discretize(parent)
 
                 if parent_disc in open_cost:
                     parent_state = open_cost[parent_disc][2]
@@ -323,9 +324,9 @@ def animate_search_and_path(order, explored_nodes, t_fin):
 #-----------------------------------------------------------
 def draw_obstacle_course(order, clearance):
     """
-    Construct a 400x200 MatPlotLib graph with the obstacle "MM 2577" (green)
-    and add a boundary of extra clearance + 170 mm (robot radius),
-    but scaled by a factor of 1/8(yellow)
+    Construct a 400x200 MatPlotLib graph with the obstacle course for
+    Project 3 Phase 2 (green) and add a boundary of extra 
+    clearance + 22 cm (robot radius, yellow)
     """
     # Grid
     x = np.arange(0, 200, 0.5)
@@ -494,7 +495,9 @@ def get_inputs():
             start_pos = (sx, sy, st)
             goal_pos = (gx, gy, None)
 
-            clearance = int(clearance)
+            # convert clearance to cm and add robot radius
+            clearance_mm = int(clearance)
+            clearance_cm = 0.1*clearance_mm 
 
             rpm1, rpm2 = map(int, rpm_str.split(","))
 
@@ -512,14 +515,8 @@ def get_inputs():
             print("Goal node outside map.")
             continue
 
-        # check that angle (deg) is multiple of 30
-        # if not st % 30 == 0:
-        #     print("Start angle is not a multiple of 30")
-        #     continue
 
-
-
-        return start_pos, goal_pos, clearance, rpm1, rpm2
+        return start_pos, goal_pos, clearance_cm, rpm1, rpm2
     
 #-----------------------------------------------------------
 def check_collisions(all_collisions, start_pos, goal_pos, order, clearance, RPM1, RPM2, r_bot):
@@ -527,8 +524,8 @@ def check_collisions(all_collisions, start_pos, goal_pos, order, clearance, RPM1
         sx, sy, _ = start_pos
         gx, gy, _ = goal_pos
 
-        sx_d, sy_d = discretize([sx, sy, 0])[:2]
-        gx_d, gy_d = discretize([gx, gy, 0])[:2]
+        sx_d, sy_d = grid_index([sx, sy, 0])[:2]
+        gx_d, gy_d = grid_index([gx, gy, 0])[:2]
 
         if all_collisions[sy_d, sx_d]:
             print("Start point is in collision")
@@ -542,9 +539,14 @@ def check_collisions(all_collisions, start_pos, goal_pos, order, clearance, RPM1
             return start_pos, goal_pos, all_collisions, clearance, RPM1, RPM2
 
         # only runs if there WAS a collision
-        start_pos, goal_pos, clearance_user, RPM1, RPM2 = get_inputs()
-        clearance = clearance_user + r_bot
-        all_collisions = draw_obstacle_course(order, clearance)
+        start_pos, goal_pos, clearance_cm, RPM1, RPM2 = get_inputs()
+
+        # convert clearance to cm and add robot radius 
+        clearance_total_cm = clearance_cm + r_bot
+        clearance_cells = clearance_total_cm / 0.5
+
+
+        all_collisions = draw_obstacle_course(order, clearance_cells)
 
 
 if __name__ == "__main__":
@@ -554,32 +556,23 @@ if __name__ == "__main__":
     order = None
     # draw_obstacle_course(order, clearance=2)
     # get user inputs
-    start_pos, goal_pos, clearance, RPM1, RPM2 = get_inputs()
-
-    # impose scaling to speed up solution (instead of a 2000 x 4000 grid, use 200 x 400 and scale
-    # everything appropriately)
-    # include the radius of the robot in the clearance
-    
-
     # define robot radius and apply scaling
     r_bot = 22 # cm
 
-    # re-define the clearance around the obstacles to include the turtle bot's size
-    clearance += r_bot
+    start_pos, goal_pos, clearance_cm, RPM1, RPM2 = get_inputs()
+    clearance_total_cm = clearance_cm + r_bot
+    clearance_cells = clearance_total_cm / 0.5
 
     # construct obstacle course
-    all_collisions = draw_obstacle_course(order, clearance)
+    all_collisions = draw_obstacle_course(order, clearance_cells)
 
     # check for collisions
-    start_pos, goal_pos, all_collisions, clearance, RPM1, RPM2 = check_collisions(all_collisions, start_pos, goal_pos, order, clearance, RPM1, RPM2, r_bot)
+    start_pos, goal_pos, all_collisions, clearance, RPM1, RPM2 = check_collisions(all_collisions, start_pos, goal_pos, order, clearance_cells, RPM1, RPM2, r_bot)
 
 
     # run algorithm
     t_init, t_fin = run_AStar(start_pos, goal_pos, all_collisions, clearance, RPM1, RPM2)
 
-    # # # evaluate time for algorithm to run
-    # # dt = t_fin - t_init
-    # # print(f"The algorithm takes {dt} s to run")
 
     # # keep plot open after completion
     plt.ioff()
