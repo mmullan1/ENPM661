@@ -322,11 +322,15 @@ def animate_search_and_path(order, explored_nodes, t_fin):
 
     plt.draw()
 #-----------------------------------------------------------
-def draw_obstacle_course(order, clearance):
+def draw_obstacle_course(order, clearance, start_pos=None, r_bot=None):
     """
     Construct a 400x200 MatPlotLib graph with the obstacle course for
     Project 3 Phase 2 (green) and add a boundary of extra 
-    clearance + 22 cm (robot radius, yellow)
+    clearance + robot radius (yellow).
+
+    Optional:
+        start_pos = (x, y, theta) or (x, y, None)
+        r_bot     = robot radius in cm
     """
     # Grid
     x = np.arange(0, 200, 0.5)
@@ -343,109 +347,95 @@ def draw_obstacle_course(order, clearance):
         """
         return A * x + B * y <= C
 
-
     # Cube 1
     cube1 = (
-        in_half_plane(X, Y, -1, 0, -139.8) &  # x >= 139.8
-        in_half_plane(X, Y,  1, 0,  170.2) &  # x <= 170.2
-        in_half_plane(X, Y,  0,-1, -26.8) &   # y >= 26.8
-        in_half_plane(X, Y,  0, 1,  57.2)     # y <= 57.2
+        in_half_plane(X, Y, -1, 0, -139.8) &
+        in_half_plane(X, Y,  1, 0,  170.2) &
+        in_half_plane(X, Y,  0,-1, -26.8) &
+        in_half_plane(X, Y,  0, 1,  57.2)
     )
 
     cube2 = (
-        in_half_plane(X, Y, -1, 0, -10.8) &  # x >= 10.8
-        in_half_plane(X, Y,  1, 0,  41.2) &  # x <= 41.2
-        in_half_plane(X, Y,  0,-1, -204.8) &   # y >= 204.8
-        in_half_plane(X, Y,  0, 1,  235.2)     # y <= 235.2
+        in_half_plane(X, Y, -1, 0, -10.8) &
+        in_half_plane(X, Y,  1, 0,  41.2) &
+        in_half_plane(X, Y,  0,-1, -204.8) &
+        in_half_plane(X, Y,  0, 1,  235.2)
     )
 
     cube3 = (
-        in_half_plane(X, Y, -1, 0, -29.8) &  # x >= 29.8
-        in_half_plane(X, Y,  1, 0,  60.2) &  # x <= 60.2
-        in_half_plane(X, Y,  0,-1, -118.3) &   # y >= 118.3
-        in_half_plane(X, Y,  0, 1,  148.7)     # y <= 148.7
+        in_half_plane(X, Y, -1, 0, -29.8) &
+        in_half_plane(X, Y,  1, 0,  60.2) &
+        in_half_plane(X, Y,  0,-1, -118.3) &
+        in_half_plane(X, Y,  0, 1,  148.7)
     )
 
     wall1 = (
-        in_half_plane(X, Y, -1, 0, 0) &  # x >= 0
-        in_half_plane(X, Y,  1, 0,  145) &  # x <= 145
-        in_half_plane(X, Y,  0,-1, -290) &   # y >= 290
-        in_half_plane(X, Y,  0, 1,  295)     # y <= 295
+        in_half_plane(X, Y, -1, 0, 0) &
+        in_half_plane(X, Y,  1, 0, 145) &
+        in_half_plane(X, Y,  0,-1, -290) &
+        in_half_plane(X, Y,  0, 1, 295)
     )
 
-    # midpoint from diagram
     theta = np.deg2rad(30)
-
-    x0 = 0 
+    x0 = 0
     y0 = 38.4
-
-    L = 140.0
+    L1 = 140.0
     t = 5.0
 
-    ux, uy = np.cos(theta), np.sin(theta)      # along-wall
-    nx, ny = -np.sin(theta), np.cos(theta)     # normal
+    ux, uy = np.cos(theta), np.sin(theta)
+    nx, ny = -np.sin(theta), np.cos(theta)
 
     wall2 = (
-        in_half_plane(X - x0, Y - y0,  ux,  uy,  L)   &   # 0 <= (p-p0)·u <= L
-        in_half_plane(X - x0, Y - y0, -ux, -uy,  0)   &
+        in_half_plane(X - x0, Y - y0,  ux,  uy,  L1) &
+        in_half_plane(X - x0, Y - y0, -ux, -uy,  0) &
         in_half_plane(X - x0, Y - y0,  nx,  ny,  t/2) &
         in_half_plane(X - x0, Y - y0, -nx, -ny,  t/2)
     )
 
     theta = np.deg2rad(30)
-
-    # right endpoint from the schematic
     x0 = 200.0
     y0 = 126.0
-
-    L = 135.0
+    L2 = 133.75
     t = 5.0
 
-    # along-wall direction: from right endpoint toward left/up
     ux, uy = -np.cos(theta), np.sin(theta)
-
-    # normal direction
     nx, ny = -uy, ux
 
     wall3 = (
-        in_half_plane(X - x0, Y - y0,  ux,  uy,  L)   &   # 0 <= (p-p0)·u <= L
-        in_half_plane(X - x0, Y - y0, -ux, -uy,  0)   &
+        in_half_plane(X - x0, Y - y0,  ux,  uy,  L2) &
+        in_half_plane(X - x0, Y - y0, -ux, -uy,  0) &
         in_half_plane(X - x0, Y - y0,  nx,  ny,  t/2) &
         in_half_plane(X - x0, Y - y0, -nx, -ny,  t/2)
     )
 
     all_obstacles = cube1 | cube2 | cube3 | wall1 | wall2 | wall3
-
-
-
-    # # --- Define fcn to generate boundary  ---
     def get_outer_ring(mask, r=clearance):
-        """
-        Generate collision boundary
-        """
-        r = int(np.ceil(r))
-        expanded = np.zeros_like(mask, dtype=bool)
+            r = int(np.floor(r))
+            expanded = np.zeros_like(mask, dtype=bool)
 
-        rows, cols = mask.shape
+            rows, cols = mask.shape
 
-        for di in range(-r, r+1):
-            for dj in range(-r, r+1):
-                src_r0 = max(0, -di)
-                src_r1 = min(rows, rows - di)
-                src_c0 = max(0, -dj)
-                src_c1 = min(cols, cols - dj)
+            for di in range(-r, r + 1):
+                for dj in range(-r, r + 1):
 
-                dst_r0 = max(0, di)
-                dst_r1 = min(rows, rows + di)
-                dst_c0 = max(0, dj)
-                dst_c1 = min(cols, cols + dj)
+                    # keep only points inside circular radius
+                    if di**2 + dj**2 > r**2:
+                        continue
 
-                expanded[dst_r0:dst_r1, dst_c0:dst_c1] |= mask[src_r0:src_r1, src_c0:src_c1]
+                    src_r0 = max(0, -di)
+                    src_r1 = min(rows, rows - di)
+                    src_c0 = max(0, -dj)
+                    src_c1 = min(cols, cols - dj)
 
-        outer_ring = expanded & (~mask)
-        return outer_ring
-    
-    # --- Generate boundaries  ---
+                    dst_r0 = max(0, di)
+                    dst_r1 = min(rows, rows + di)
+                    dst_c0 = max(0, dj)
+                    dst_c1 = min(cols, cols + dj)
+
+                    expanded[dst_r0:dst_r1, dst_c0:dst_c1] |= mask[src_r0:src_r1, src_c0:src_c1]
+
+            outer_ring = expanded & (~mask)
+            return outer_ring
     cube1_barrier = get_outer_ring(cube1, r=clearance)
     cube2_barrier = get_outer_ring(cube2, r=clearance)
     cube3_barrier = get_outer_ring(cube3, r=clearance)
@@ -453,25 +443,23 @@ def draw_obstacle_course(order, clearance):
     wall2_barrier = get_outer_ring(wall2, r=clearance)
     wall3_barrier = get_outer_ring(wall3, r=clearance)
 
-    all_barriers  = cube1_barrier | cube2_barrier | cube3_barrier | wall1_barrier | wall2_barrier | wall3_barrier
-
+    all_barriers = cube1_barrier | cube2_barrier | cube3_barrier | wall1_barrier | wall2_barrier | wall3_barrier
     all_collisions = all_obstacles | all_barriers
-    # initialize the plot the first time this fcn is called,
-    # but not the second time
+
     if order is None:
         plt.ion()
-        plt.figure(figsize=(6,6))
-        plt.contourf(X_plot, Y_plot, all_obstacles, levels=[0.5, 1])
-        plt.contourf(X_plot, Y_plot, all_barriers, levels=[0.5, 1], colors=['yellow'])
-        plt.gca().set_aspect('equal')
-        plt.xlim(0, 200)
-        plt.ylim(0, 400)
-        plt.grid(True)
-        plt.title("Project 3 Phase 2 Obstacle Course")
+        fig, ax = plt.subplots(figsize=(6, 6))
+
+        ax.contourf(X_plot, Y_plot, all_obstacles, levels=[0.5, 1])
+        ax.contourf(X_plot, Y_plot, all_barriers, levels=[0.5, 1], colors=['yellow'])
+
+        ax.set_aspect('equal')
+        ax.set_xlim(0, 200)
+        ax.set_ylim(0, 400)
+        ax.grid(True)
+        ax.set_title("Project 3 Phase 2 Obstacle Course")
 
     return all_collisions
-
-
 
 
 #-----------------------------------------------------------
@@ -496,7 +484,7 @@ def get_inputs():
             goal_pos = (gx, gy, None)
 
             # convert clearance to cm and add robot radius
-            clearance_mm = int(clearance)
+            clearance_mm = float(clearance)
             clearance_cm = 0.1*clearance_mm 
 
             rpm1, rpm2 = map(int, rpm_str.split(","))
@@ -519,7 +507,7 @@ def get_inputs():
         return start_pos, goal_pos, clearance_cm, rpm1, rpm2
     
 #-----------------------------------------------------------
-def check_collisions(all_collisions, start_pos, goal_pos, order, clearance, RPM1, RPM2, r_bot):
+def check_collisions(all_collisions, start_pos, goal_pos, order, clearance_cells, RPM1, RPM2, r_bot):
     while True:
         sx, sy, _ = start_pos
         gx, gy, _ = goal_pos
@@ -536,7 +524,7 @@ def check_collisions(all_collisions, start_pos, goal_pos, order, clearance, RPM1
             plt.close()
 
         else:
-            return start_pos, goal_pos, all_collisions, clearance, RPM1, RPM2
+            return start_pos, goal_pos, all_collisions, clearance_cells, RPM1, RPM2
 
         # only runs if there WAS a collision
         start_pos, goal_pos, clearance_cm, RPM1, RPM2 = get_inputs()
