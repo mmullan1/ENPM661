@@ -99,8 +99,6 @@ def discretize(node):
 
     return (ix, iy, itheta)
 
-
-
 #-----------------------------------------------------------
 def run_AStar(start_pos, goal_pos, all_collisions, clearance, RPM1, RPM2):
     """
@@ -302,6 +300,8 @@ def animate_search_and_path(order, explored_nodes, t_fin):
     # 2) Animate final path (FULL)
     # =========================================================
     order = order[::-1]   # safer than in-place reverse
+
+    write_path(order)
 
     path_batch = 3
     px, py = [], []
@@ -537,6 +537,97 @@ def check_collisions(all_collisions, start_pos, goal_pos, order, clearance_cells
         all_collisions = draw_obstacle_course(order, clearance_cells)
 
 
+#-----------------------------------------------------------
+def write_path(order, points_per_meter=200, filename="astar_path.csv"):
+
+    order = np.asarray(order, dtype=float)
+
+    # keep x,y only
+    xy_cm = order[:, 0:2]
+
+    # convert cm -> m for ROS/Gazebo
+    xy_m = xy_cm / 100.0
+
+    # redistribute in meters
+    new_path = redistribute_path(xy_m, points_per_meter)
+
+    # save to CSV
+    np.savetxt(filename, new_path, delimiter=",", header="x,y", comments="")
+
+    print(f"Saved {len(new_path)} waypoints to {filename}")
+    print(new_path)
+
+    return new_path
+
+#-----------------------------------------------------------
+def redistribute_path(order, points_per_meter=200):
+    """
+    Redistribute a 2D path by arc length.
+
+    Parameters
+    ----------
+    order : array-like, shape (N,2) or (N,>=2)
+        Original path points. Only x and y are used.
+    points_per_meter : float
+        Desired waypoint density.
+
+    Returns
+    -------
+    new_path : ndarray, shape (M,2)
+        Redistributed path points.
+    t_old : ndarray, shape (N,)
+        Original normalized arc-length parameter in [0,1].
+    t_new : ndarray, shape (M,)
+        New uniformly spaced normalized parameter in [0,1].
+    total_length : float
+        Total path length in meters.
+    """
+
+    order = np.asarray(order, dtype=float)
+    xy = order[:, 0:2]
+
+    # Handle degenerate cases
+    if len(xy) == 0:
+        return np.empty((0, 2)), np.array([]), np.array([]), 0.0
+    if len(xy) == 1:
+        return xy.copy(), np.array([0.0]), np.array([0.0]), 0.0
+
+    # Segment lengths
+    diffs = np.diff(xy, axis=0)
+    seg_lengths = np.linalg.norm(diffs, axis=1)
+
+    # Cumulative arc length
+    s = np.zeros(len(xy))
+    s[1:] = np.cumsum(seg_lengths)
+
+    total_length = s[-1]
+
+    # If all points are identical
+    if total_length == 0:
+        return xy[:1].copy(), np.zeros(1), np.zeros(1), 0.0
+
+    # Normalize to parameter t in [0,1]
+    t_old = s / total_length
+
+    # Number of redistributed points
+    num_points = max(2, int(np.round(total_length * points_per_meter)) + 1)
+
+    # Uniform parameter values in [0,1]
+    t_new = np.linspace(0.0, 1.0, num_points)
+
+    # Convert back to arc length values
+    s_new = t_new * total_length
+
+    # Interpolate x(s), y(s)
+    x_new = np.interp(s_new, s, xy[:, 0])
+    y_new = np.interp(s_new, s, xy[:, 1])
+
+    new_path = np.column_stack((x_new, y_new))
+
+    return new_path
+
+
+#-----------------------------------------------------------
 if __name__ == "__main__":
 
 
@@ -545,7 +636,7 @@ if __name__ == "__main__":
     # draw_obstacle_course(order, clearance=2)
     # get user inputs
     # define robot radius and apply scaling
-    r_bot = 22 # cm
+    r_bot = 15 # cm
 
     start_pos, goal_pos, clearance_cm, RPM1, RPM2 = get_inputs()
     clearance_total_cm = clearance_cm + r_bot
