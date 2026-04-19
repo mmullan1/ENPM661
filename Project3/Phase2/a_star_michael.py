@@ -92,8 +92,8 @@ def discretize(node):
 
     x, y, theta = node
 
-    ix = int(np.floor(x / 2 + 0.5))   # nearest 2 bin
-    iy = int(np.floor(y / 2 + 0.5))
+    ix = int(np.floor(x / 5 + 0.5))   # nearest 2 bin
+    iy = int(np.floor(y / 5 + 0.5))
     itheta = int((theta % 360) // 30)   # 0.11
 
     return (ix, iy, itheta)
@@ -579,7 +579,7 @@ def write_path(order, points_per_meter=40, filename="astar_path.csv"):
     new_path_m = 2*new_path_m
 
     np.savetxt(filename, new_path_m, delimiter=",", header="x,y", comments="")
-    print(new_path_m)
+    # print(new_path_m)
     return new_path_m
 #-----------------------------------------------------------
 def redistribute_path(order, points_per_meter=40):
@@ -648,7 +648,7 @@ if __name__ == "__main__":
     # draw_obstacle_course(order, clearance=2)
     # get user inputs
     # define robot radius and apply scaling
-    r_bot = 22 # cm
+    r_bot = 15 # cm
 
     start_pos, goal_pos, clearance_cm, RPM1, RPM2 = get_inputs()
     clearance_total_cm = clearance_cm + r_bot
