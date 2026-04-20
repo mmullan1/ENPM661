@@ -295,8 +295,6 @@ def animate_search_and_path(order, explored_nodes, t_fin):
                 sx.clear()
                 sy.clear()
 
-    write_path(order)
-
     # =========================================================
     # 2) Animate final path (FULL)
     # =========================================================
@@ -536,107 +534,6 @@ def check_collisions(all_collisions, start_pos, goal_pos, order, clearance_cells
 
         all_collisions = draw_obstacle_course(order, clearance_cells)
 
-#-----------------------------------------------------------
-def write_path(order, points_per_meter=40, filename="astar_path.csv"):
-    order = np.asarray(order, dtype=float)
-
-    if order.ndim != 2 or order.shape[1] < 2:
-        raise ValueError("order must have shape (N,2) or (N,>=2)")
-
-    # planner path in cm -> m
-    xy_cm = order[:, 0:2]
-    xy_m = xy_cm / 100.0
-
-    # redistribute in planner frame
-    new_path_m = redistribute_path(xy_m, points_per_meter=points_per_meter)
-
-    # -------------------------------------------------
-    # TRANSFORM planner path into sim/world coordinates
-    # -------------------------------------------------
-    # Use the FIRST planner waypoint as the planner-frame origin,
-    # then place that at the robot's actual spawn pose in sim.
-    #
-    # Change these if your spawn pose changes.
-    theta = 0.0          # rotation from planner frame -> sim frame
-    x_spawn = 0.5   # robot world x from sim
-    y_spawn = 0.0   # robot world y from sim
-
-    # make path relative to its first waypoint
-    p0 = new_path_m[0].copy()
-    rel = new_path_m - p0
-
-    # rotate relative path
-    c = np.cos(theta)
-    s = np.sin(theta)
-    R = np.array([[c, -s],
-                  [s,  c]])
-
-    rel_rot = rel @ R.T
-
-    # shift so first waypoint lands exactly at robot spawn
-    new_path_m = rel_rot + np.array([x_spawn, y_spawn])
-    
-    new_path_m = 2*new_path_m
-
-    np.savetxt(filename, new_path_m, delimiter=",", header="x,y", comments="")
-    print(new_path_m)
-    return new_path_m
-#-----------------------------------------------------------
-def redistribute_path(order, points_per_meter=40):
-    """
-    Redistribute a 2D path by arc length.
-
-    Parameters
-    ----------
-    order : array-like, shape (N,2) or (N,>=2)
-        Original path points. Assumed to already be in meters.
-        Only x and y are used.
-    points_per_meter : float
-        Desired waypoint density in points/meter.
-
-    Returns
-    -------
-    new_path : ndarray, shape (M,2)
-        Redistributed path points in meters.
-    """
-    order = np.asarray(order, dtype=float)
-
-    if order.ndim != 2 or order.shape[1] < 2:
-        raise ValueError("order must have shape (N,2) or (N,>=2)")
-
-    xy = order[:, 0:2]
-
-    # Degenerate cases
-    if len(xy) == 0:
-        return np.empty((0, 2))
-    if len(xy) == 1:
-        return xy.copy()
-
-    # Segment lengths in meters
-    diffs = np.diff(xy, axis=0)
-    seg_lengths = np.linalg.norm(diffs, axis=1)
-
-    # Cumulative arc length in meters
-    s = np.zeros(len(xy))
-    s[1:] = np.cumsum(seg_lengths)
-    total_length = s[-1]
-
-    # If all points are identical
-    if total_length == 0:
-        return xy[:1].copy()
-
-    # Number of redistributed points
-    num_points = max(2, int(np.round(total_length * points_per_meter)) + 1)
-
-    # Uniform arc length samples from 0 to total_length
-    s_new = np.linspace(0.0, total_length, num_points)
-
-    # Interpolate x(s), y(s)
-    x_new = np.interp(s_new, s, xy[:, 0])
-    y_new = np.interp(s_new, s, xy[:, 1])
-
-    new_path = np.column_stack((y_new, -x_new))
-    return new_path
 
 
 #-----------------------------------------------------------
