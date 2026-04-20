@@ -2,7 +2,7 @@
 
 # since this file is sourced use either the provided AMENT_CURRENT_PREFIX
 # or fall back to the destination set at configure time
-: ${AMENT_CURRENT_PREFIX:="/home/michael/Desktop/project3_ws/install/turtlebot3_project3"}
+: ${AMENT_CURRENT_PREFIX:="/home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/install/turtlebot3_project3"}
 if [ ! -d "$AMENT_CURRENT_PREFIX" ]; then
   if [ -z "$COLCON_CURRENT_PREFIX" ]; then
     echo "The compile time prefix path '$AMENT_CURRENT_PREFIX' doesn't " \

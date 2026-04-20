@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/michael/Desktop/project3_ws/src/turtlebot3_proj3_661
+CMAKE_SOURCE_DIR = /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/src/turtlebot3_proj3_661
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/michael/Desktop/project3_ws/build/turtlebot3_project3
+CMAKE_BINARY_DIR = /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/build/turtlebot3_project3
 
 # Utility rule file for uninstall.
 
@@ -78,6 +78,6 @@ CMakeFiles/uninstall.dir/clean:
 .PHONY : CMakeFiles/uninstall.dir/clean
 
 CMakeFiles/uninstall.dir/depend:
-	cd /home/michael/Desktop/project3_ws/build/turtlebot3_project3 && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/michael/Desktop/project3_ws/src/turtlebot3_proj3_661 /home/michael/Desktop/project3_ws/src/turtlebot3_proj3_661 /home/michael/Desktop/project3_ws/build/turtlebot3_project3 /home/michael/Desktop/project3_ws/build/turtlebot3_project3 /home/michael/Desktop/project3_ws/build/turtlebot3_project3/CMakeFiles/uninstall.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/build/turtlebot3_project3 && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/src/turtlebot3_proj3_661 /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/src/turtlebot3_proj3_661 /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/build/turtlebot3_project3 /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/build/turtlebot3_project3 /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/build/turtlebot3_project3/CMakeFiles/uninstall.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/uninstall.dir/depend
 

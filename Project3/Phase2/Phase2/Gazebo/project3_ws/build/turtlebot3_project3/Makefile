@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/michael/Desktop/project3_ws/src/turtlebot3_proj3_661
+CMAKE_SOURCE_DIR = /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/src/turtlebot3_proj3_661
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/michael/Desktop/project3_ws/build/turtlebot3_project3
+CMAKE_BINARY_DIR = /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/build/turtlebot3_project3
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -142,9 +142,9 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/michael/Desktop/project3_ws/build/turtlebot3_project3/CMakeFiles /home/michael/Desktop/project3_ws/build/turtlebot3_project3//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/build/turtlebot3_project3/CMakeFiles /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/build/turtlebot3_project3//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/michael/Desktop/project3_ws/build/turtlebot3_project3/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/build/turtlebot3_project3/CMakeFiles 0
 .PHONY : all
 
 # The main clean target

@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/michael/Desktop/project3_ws/src/turtlebot3_proj3_661
+CMAKE_SOURCE_DIR = /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/src/turtlebot3_proj3_661
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/michael/Desktop/project3_ws/build/turtlebot3_project3
+CMAKE_BINARY_DIR = /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/build/turtlebot3_project3
 
 # Include any dependencies generated for this target.
 include CMakeFiles/turtlebot3_drive.dir/depend.make
@@ -70,18 +70,18 @@ include CMakeFiles/turtlebot3_drive.dir/progress.make
 include CMakeFiles/turtlebot3_drive.dir/flags.make
 
 CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.o: CMakeFiles/turtlebot3_drive.dir/flags.make
-CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.o: /home/michael/Desktop/project3_ws/src/turtlebot3_proj3_661/src/turtlebot3_drive.cpp
+CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.o: /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/src/turtlebot3_proj3_661/src/turtlebot3_drive.cpp
 CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.o: CMakeFiles/turtlebot3_drive.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/michael/Desktop/project3_ws/build/turtlebot3_project3/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.o -MF CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.o.d -o CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.o -c /home/michael/Desktop/project3_ws/src/turtlebot3_proj3_661/src/turtlebot3_drive.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/build/turtlebot3_project3/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.o -MF CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.o.d -o CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.o -c /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/src/turtlebot3_proj3_661/src/turtlebot3_drive.cpp
 
 CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/michael/Desktop/project3_ws/src/turtlebot3_proj3_661/src/turtlebot3_drive.cpp > CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.i
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/src/turtlebot3_proj3_661/src/turtlebot3_drive.cpp > CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.i
 
 CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/michael/Desktop/project3_ws/src/turtlebot3_proj3_661/src/turtlebot3_drive.cpp -o CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.s
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/src/turtlebot3_proj3_661/src/turtlebot3_drive.cpp -o CMakeFiles/turtlebot3_drive.dir/src/turtlebot3_drive.cpp.s
 
 # Object files for target turtlebot3_drive
 turtlebot3_drive_OBJECTS = \
@@ -180,7 +180,7 @@ turtlebot3_drive: /opt/ros/humble/lib/librcpputils.so
 turtlebot3_drive: /opt/ros/humble/lib/librcutils.so
 turtlebot3_drive: /usr/lib/x86_64-linux-gnu/libpython3.10.so
 turtlebot3_drive: CMakeFiles/turtlebot3_drive.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/michael/Desktop/project3_ws/build/turtlebot3_project3/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable turtlebot3_drive"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/build/turtlebot3_project3/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable turtlebot3_drive"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/turtlebot3_drive.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -192,6 +192,6 @@ CMakeFiles/turtlebot3_drive.dir/clean:
 .PHONY : CMakeFiles/turtlebot3_drive.dir/clean
 
 CMakeFiles/turtlebot3_drive.dir/depend:
-	cd /home/michael/Desktop/project3_ws/build/turtlebot3_project3 && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/michael/Desktop/project3_ws/src/turtlebot3_proj3_661 /home/michael/Desktop/project3_ws/src/turtlebot3_proj3_661 /home/michael/Desktop/project3_ws/build/turtlebot3_project3 /home/michael/Desktop/project3_ws/build/turtlebot3_project3 /home/michael/Desktop/project3_ws/build/turtlebot3_project3/CMakeFiles/turtlebot3_drive.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/build/turtlebot3_project3 && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/src/turtlebot3_proj3_661 /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/src/turtlebot3_proj3_661 /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/build/turtlebot3_project3 /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/build/turtlebot3_project3 /home/michael/Documents/GitHub/ENPM661/Project3/Phase2/Phase2/Gazebo/project3_ws/build/turtlebot3_project3/CMakeFiles/turtlebot3_drive.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/turtlebot3_drive.dir/depend
 
