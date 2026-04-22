@@ -2,7 +2,8 @@
 ## A* Path Planning with TurtleBot3 in ROS2 + Gazebo
 
 ## Overview
-This project implements the **A\*** path planning algorithm for a **non-holonomic differential drive robot (TurtleBot3)** and integrates it into a **ROS2 + Gazebo simulation environment**.
+This project implements the **A\*** path planning algorithm for a **non-holonomic differential drive robot (TurtleBot3)** and integrates it into a **ROS2 + Gazebo simulation environment**
+and into a **ROS2 + FalconSim environment**.
 
 The planner generates a collision-free trajectory considering:
 - Robot kinematics (differential drive constraints)
@@ -17,9 +18,6 @@ This project is broken down into two spaller phases:
 - Phase 1: Write **A\*** planning algorithm and visualize the explored paths
 - Phase 2: Implement this algorithm in both Gazebo and FalconSim
 
-Because of technical difficulties, the FalconSim section is not yet complete, so this ReadMe will document the work done in Phase 1 and the Gazebo portion of Phase 2
-
-
 ---
 
 ## Objectives
@@ -28,32 +26,50 @@ Because of technical difficulties, the FalconSim section is not yet complete, so
 - Avoid obstacles with clearance and robot radius  
 - Integrate planner into ROS2 node  
 - Execute trajectory in Gazebo simulation  
+- Execute trajectory in FalconSim simulation
 
 ---
 
 ## Repository Structure
 ```
 Project3/
-│── Phase1/ (Already Graded)
-└── Phase2/ (This Submission)
+├── Phase1/  (Already Graded)
+│
+└── Phase2/  (This Submission)
     ├── Phase1/
     │   └── a_star_michael.py
     │
     └── Phase2/
-        └── Gazebo/
-            └── project3_ws/
-                ├── src/
-                │   └── turtlebot3_proj3_661/
-                │       ├── scripts/
-                │       │   ├── a_star_michael.py
-                │       │   ├── gazebo_interface.py
-                │       ├── launch/
-                │       ├── CMakeLists.txt
-                │       └── package.xml
-                │
-                ├── build/
-                ├── install/
-                └── log/
+        ├── Gazebo/
+        │   └── project3_ws/
+        │       ├── src/
+        │       │   └── turtlebot3_proj3_661/
+        │       │       ├── scripts/
+        │       │       │   ├── a_star_michael.py
+        │       │       │   └── gazebo_interface.py
+        │       │       ├── launch/
+        │       │       ├── CMakeLists.txt
+        │       │       └── package.xml
+        │       │
+        │       ├── build/
+        │       ├── install/
+        │       └── log/
+        │
+        └── FalconSim/
+            └── ROS2/
+                └── Scenarios/
+                    └── AMRPathPlanning/
+                        └── ROS2/
+                            └── falcon_turtlebot3_project_ws/
+                                ├── build/
+                                ├── install/
+                                ├── log/
+                                └── src/
+                                    └── astar_falcon_planner/
+                                        ├── falcon_amr_controller.py
+                                        └── submodules/
+                                            └── astar_planner.py
+
         ```
 
 ---
@@ -66,7 +82,7 @@ Project3/
 
 ---
 
-## How to Run
+## How to Run (Gazebo Environment)
 
 ### 1. Clone
 ```
@@ -154,6 +170,54 @@ ros2 service call /reset_world std_srvs/srv/Empty
 
 ---
 
+
+---
+
+## How to Run (Gazebo Environment)
+
+### 1. Clone
+```
+git clone https://github.com/mmullan1/ENPM661.git
+```
+
+---
+
+### 2. Open FalconSim in browser
+
+---
+
+### 3. Replace astar_planner.py with the version from the cloned repository and save
+
+---
+
+### 4. Replace falcon_amr_controller with the version from the cloned repository and save
+
+
+---
+
+### 5. Open a new shell in the browser environment and navigate to the proper directory:
+
+```
+cd Scenarios/AMRPathPlanning/ROS2/falcon_turtlebot3_project_ws
+```
+
+---
+
+### 6. Initialize the environment
+
+```
+colcon build
+source install/setup.bash
+```
+
+---
+
+### 7. Run the python script
+```
+ros2 launch astar_falcon_planner ros_falcon_astar.launch.py start_position:=[1.0,0.0,0.0] end_position:=[1.0,4.0,0.0] robot_radius:=0.220 clearance:=0.0025 delta_time:=1.0 wheel_radius:=0.033 wheel_distance:=0.287 rpms:=[50.0,100.0]
+```
+---
+
 ## Input Parameters
 - start_position
 - goal_position
@@ -170,9 +234,9 @@ ros2 service call /reset_world std_srvs/srv/Empty
 ---
 
 ## Results
-Video Link: https://drive.google.com/drive/u/0/folders/1uoT35ZuKlzDKHVmRIuMGqnr2Gvjo5ACP
+Video Link (2 Videos: Gazebo and FalconSim):    https://drive.google.com/drive/u/0/folders/1uoT35ZuKlzDKHVmRIuMGqnr2Gvjo5ACP
 
-(Note): In the video, ignore the directory; it won't match the one you use. Refer to the steps above for that.
+(Note): In the Gazebo video, ignore the directory; it won't match the one you use. Refer to the steps above for that.
  It was recorded before I incorporated everything into GitHub
 ---
 
