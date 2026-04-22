@@ -1,5 +1,5 @@
 # ENPM661 – Project 3 Phase 2  
-## A* Path Planning with TurtleBot3 in ROS2 + Gazebo
+## A* Path Planning with TurtleBot3 in ROS2 + Gazebo and ROS2 + FalconSim
 
 ## Overview
 This project implements the **A\*** path planning algorithm for a **non-holonomic differential drive robot (TurtleBot3)** and integrates it into a **ROS2 + Gazebo simulation environment**
@@ -73,14 +73,12 @@ Project3/
         ```
 
 ---
-
+```
 ## Dependencies
 - ROS2 Humble  
 - Gazebo  
 - Python 3  
 - numpy, matplotlib , time, heapq, math, rclpy, geometry_msgs, nav_msgs
-
----
 
 ## How to Run (Gazebo Environment)
 
@@ -171,9 +169,7 @@ ros2 service call /reset_world std_srvs/srv/Empty
 ---
 
 
----
-
-## How to Run (Gazebo Environment)
+## How to Run (FalconSim Environment)
 
 ### 1. Clone
 ```
