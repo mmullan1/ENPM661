@@ -298,7 +298,7 @@ def animate_search_and_path(order, explored_nodes, t_fin):
     # =========================================================
     # 2) Animate final path (FULL)
     # =========================================================
-    order = order[::-1]   # safer than in-place reverse
+    order = order[::-1]  
 
     
     path_batch = 3

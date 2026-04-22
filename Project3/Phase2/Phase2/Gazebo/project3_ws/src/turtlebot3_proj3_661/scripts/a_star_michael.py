@@ -569,8 +569,7 @@ def write_path(order, points_per_meter=40, filename="astar_path.csv"):
     # -------------------------------------------------
     # Use the FIRST planner waypoint as the planner-frame origin,
     # then place that at the robot's actual spawn pose in sim.
-    #
-    # Change these if your spawn pose changes.
+
     theta = 0.0          # rotation from planner frame -> sim frame
     x_spawn = 0.5   # robot world x from sim
     y_spawn = 0.0   # robot world y from sim
