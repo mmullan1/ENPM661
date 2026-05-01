@@ -14,7 +14,7 @@ class SDLSParams:
     r_eff: float = 0.25   #* meters per rad, effective radius of end-effector for orientation weighting
     dmax_pos: Optional[float] = 0.10 #* ClampMag for position error (meters)
     dmax_ori: Optional[float] = None #* ClampMag for orientation error (radians)
-    gamma_max_deg: float = 45.0      #* Global per-step joint change limit (degrees)
+    gamma_max_deg: float = 45.0      #* Global per-step joint ffkchange limit (degrees)
     v_max_deg_step: Optional[Union[float, np.ndarray]] = None #* Per-joint max change per step (degrees)
     joint_limits_deg: Optional[Tuple[np.ndarray, np.ndarray]] = None #* (lower, upper) in degrees or None
     sigma_eps: float = 1e-9  #* Threshold below which singular values are treated as zero

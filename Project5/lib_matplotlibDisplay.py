@@ -44,7 +44,138 @@ def cube_faces(position, size):
     ]
 
     return faces, v
+import numpy as np
 
+
+def joint_link_boundaries(q, boxes, link_radius=0.035):
+    """
+    Check whether a robot joint configuration causes collision
+    between any robot link boundary and any obstacle box.
+
+    Inputs:
+        q: joint configuration
+        boxes: list of obstacle boxes
+              each box can be:
+              {
+                  "min": np.array([xmin, ymin, zmin]),
+                  "max": np.array([xmax, ymax, zmax])
+              }
+
+        link_radius: collision radius around each link skeleton.
+                     Use same units as fk_cr3 output and boxes.
+
+    Returns:
+        bool: True if collision occurs, False otherwise
+    """
+
+    _, p_list, _, T0e = fk_cr3(q)
+
+    # Make sure p_list is an array of 3D points
+    p_list = np.asarray(p_list, dtype=float)
+
+    # Optional: include base if fk_cr3 does not include it
+    # p_list should look like:
+    # [base, joint1, joint2, ..., end_effector]
+    if p_list.shape[1] != 3:
+        raise ValueError("p_list must be an Nx3 array of 3D points.")
+
+    links = build_robot_boundary(p_list, r=link_radius)
+
+    for link in links:
+        A = link["start"]
+        B = link["end"]
+        r = link["radius"]
+
+        for box in boxes:
+            box_min, box_max = unpack_box(box)
+
+            if segment_box_collision(A, B, r, box_min, box_max):
+                return True
+
+    return False
+
+def unpack_box(box):
+    if isinstance(box, dict):
+        return np.asarray(box["min"], dtype=float), np.asarray(box["max"], dtype=float)
+
+    if isinstance(box, tuple) or isinstance(box, list):
+        return np.asarray(box[0], dtype=float), np.asarray(box[1], dtype=float)
+
+    raise TypeError(f"Unsupported box format: {type(box)}")
+
+def build_robot_boundary(p_list, r):
+    """
+    Build capsule-like collision boundaries around each robot link.
+
+    Inputs:
+        p_list: Nx3 array of joint/link endpoint positions
+        r: radius around each link
+
+    Returns:
+        links: list of link boundary dictionaries
+    """
+
+    links = []
+
+    for i in range(len(p_list) - 1):
+        A = np.asarray(p_list[i], dtype=float)
+        B = np.asarray(p_list[i + 1], dtype=float)
+
+        length = np.linalg.norm(B - A)
+
+        # Skip zero-length links
+        if length < 1e-9:
+            continue
+
+        links.append({
+            "start": A,
+            "end": B,
+            "radius": r,
+            "length": length,
+            "direction": (B - A) / length
+        })
+
+    return links
+
+
+def closest_point_on_box(p, box_min, box_max):
+    """
+    Closest point on an axis-aligned box to point p.
+    """
+    return np.maximum(box_min, np.minimum(p, box_max))
+
+
+def segment_box_collision(A, B, radius, box_min, box_max, samples=25):
+    """
+    Approximate capsule-vs-box collision by sampling points along the link axis.
+
+    Collision occurs if any sampled point on the segment is within radius
+    of the box.
+
+    Inputs:
+        A, B: segment endpoints
+        radius: capsule/cylinder radius
+        box_min, box_max: AABB bounds
+        samples: number of checks along the link
+
+    Returns:
+        bool
+    """
+
+    A = np.asarray(A, dtype=float)
+    B = np.asarray(B, dtype=float)
+
+    for s in np.linspace(0.0, 1.0, samples):
+        p = A + s * (B - A)
+
+        closest_box_point = closest_point_on_box(p, box_min, box_max)
+
+        dist_sq = np.sum((p - closest_box_point) ** 2)
+
+        if dist_sq <= radius ** 2:
+            return True
+
+    return False
 
 def plot_yaml_scene(ax, yaml_file):
     """
@@ -155,13 +286,8 @@ def set_equal_axes(ax, all_points, pad=0.2):
 def render_scene_with_start_goal(yaml_file, base_q, goal_q, new_q):
     """
     Function to overlay everything in MatPlotLib
-
-    Inputs:
-        - yaml_file: 
-        - base_q: 
-        - goal_q: 
-        - new_q: 
     """
+
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection="3d")
 
@@ -183,8 +309,8 @@ def render_scene_with_start_goal(yaml_file, base_q, goal_q, new_q):
         alpha=0.85
     )
 
+    all_robot_points = [p_base, p_goal]
 
-    print(new_q)
     for i in range(len(new_q)):
         p_new = plot_robot_skeleton(
             ax,
@@ -194,20 +320,110 @@ def render_scene_with_start_goal(yaml_file, base_q, goal_q, new_q):
             alpha=0.85
         )
 
+        p_cyl = plot_robot_cylinders(
+            ax,
+            new_q[i],
+            radius=0.035,
+            color="tab:green",
+            alpha=0.20
+        )
+
+        all_robot_points.append(p_new)
+        all_robot_points.append(p_cyl)
+
     ax.plot([0, 0.08], [0, 0], [0, 0], color="r", linewidth=2)
     ax.plot([0, 0], [0, 0.08], [0, 0], color="g", linewidth=2)
     ax.plot([0, 0], [0, 0], [0, 0.08], color="b", linewidth=2)
 
-    all_points = np.vstack((scene_pts, p_base, p_goal))
+    all_points = np.vstack([scene_pts] + all_robot_points)
     set_equal_axes(ax, all_points)
 
-    ax.set_title("Obstacle Space + CR3 Start/Goal Skeletons")
+    ax.set_title("Obstacle Space + CR3 Start/Goal Skeletons + Collision Cylinders")
     ax.set_xlabel("X [m]")
     ax.set_ylabel("Y [m]")
     ax.set_zlabel("Z [m]")
     ax.legend()
 
     plt.show()
+
+
+def plot_robot_cylinders(ax, q, radius=0.035, color="tab:green", alpha=0.25):
+    """
+    Plot cylindrical collision boundaries around each robot link.
+    """
+
+    _, p_list, _, T0e = fk_cr3(q)
+    p_list = np.asarray(p_list, dtype=float)
+
+    for i in range(len(p_list) - 1):
+        p0 = p_list[i]
+        p1 = p_list[i + 1]
+
+        plot_link_cylinder(
+            ax,
+            p0,
+            p1,
+            radius=radius,
+            color=color,
+            alpha=alpha
+        )
+
+    return p_list
+
+def plot_link_cylinder(ax, p0, p1, radius=0.035, color="tab:green", alpha=0.75, resolution=16):
+    """
+    Plot a cylinder around a robot link from p0 to p1.
+    """
+
+    p0 = np.asarray(p0, dtype=float)
+    p1 = np.asarray(p1, dtype=float)
+
+    axis = p1 - p0
+    length = np.linalg.norm(axis)
+
+    if length < 1e-9:
+        return
+
+    n = axis / length
+
+    # Pick a vector not parallel to n
+    if abs(n[0]) < 0.9:
+        temp = np.array([1.0, 0.0, 0.0])
+    else:
+        temp = np.array([0.0, 1.0, 0.0])
+
+    # Build two perpendicular radial directions
+    u = np.cross(n, temp)
+    u = u / np.linalg.norm(u)
+
+    v = np.cross(n, u)
+    v = v / np.linalg.norm(v)
+
+    theta = np.linspace(0, 2 * np.pi, resolution)
+    z = np.linspace(0, length, 2)
+
+    theta_grid, z_grid = np.meshgrid(theta, z)
+
+    X = (
+        p0[0]
+        + z_grid * n[0]
+        + radius * np.cos(theta_grid) * u[0]
+        + radius * np.sin(theta_grid) * v[0]
+    )
+    Y = (
+        p0[1]
+        + z_grid * n[1]
+        + radius * np.cos(theta_grid) * u[1]
+        + radius * np.sin(theta_grid) * v[1]
+    )
+    Z = (
+        p0[2]
+        + z_grid * n[2]
+        + radius * np.cos(theta_grid) * u[2]
+        + radius * np.sin(theta_grid) * v[2]
+    )
+
+    ax.plot_surface(X, Y, Z, color=color, alpha=alpha, linewidth=0)
 
 
 def start_rrt(q_start, q_goal, max_step_size, yaml_file):
@@ -224,6 +440,11 @@ def start_rrt(q_start, q_goal, max_step_size, yaml_file):
         - tree: 
     """
     boxes = load_box_obstacles(yaml_file)
+    bool = joint_link_boundaries(q_start, boxes)
+    if bool is True:
+        print("Starting configuration is in collision with environment")
+        return
+
     tree = expand_rrt(q_start, q_goal, max_step_size, 5000, boxes)
     return tree
 
@@ -289,10 +510,15 @@ def expand_rrt(q_start, q_target, max_step_size, steps, boxes):
         else:
             q_candidate = q_near + (direction / distance) * max_step_size
 
-        # 4) reject collision nodes
+        # 4) reject collision nodes (skeleton and boundary)
         if check_collision(q_candidate, boxes):
             print("Rejected collision node:", q_candidate)
             continue
+
+        if joint_link_boundaries(q_candidate, boxes, 0.035):
+            print("Rejected collision node:", q_candidate)
+            continue
+
 
         # 5) accept node into tree
         tree.append(q_candidate.copy())
