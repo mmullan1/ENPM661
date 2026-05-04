@@ -45,17 +45,10 @@ def cube_faces(position, size):
     return faces, v
 
 # -------------------------------------------------------------------------------------------------
-def load_box_obstacles(yaml_file):
+def load_box_obstacles(yaml_file, margin=0.00):
     """
-    Loads in the obstacles from the yaml file
-
-    Inputs: 
-        - yaml_file: the file with the obstacles (must be in the same directory as the terminal)
-    
-    Returns: 
-        - boxes: 
-
-    
+    Loads box obstacles and inflates them by margin.
+    margin is in meters.
     """
     with open(yaml_file, "r") as f:
         scene = yaml.safe_load(f)
@@ -66,11 +59,11 @@ def load_box_obstacles(yaml_file):
         if obj["type"] == "box":
             faces, vertices = cube_faces(obj["position"], obj["size"])
 
-            mins = vertices.min(axis=0)
-            maxs = vertices.max(axis=0)
+            mins = vertices.min(axis=0) - margin
+            maxs = vertices.max(axis=0) + margin
 
             boxes.append((mins, maxs))
-    
+
     return boxes
 
 # -------------------------------------------------------------------------------------------------
@@ -180,7 +173,8 @@ def check_collision(q, boxes):
     _, p_list, _, _ = fk_cr3(q)
     points = np.asarray(p_list, dtype=float)
 
-    for p in points:
+    # run collision check, but not for the base link (it's attatched to the floor)
+    for p in points[1:]:
         for mins, maxs in boxes:
             inside_x = mins[0] <= p[0] <= maxs[0]
             inside_y = mins[1] <= p[1] <= maxs[1]
@@ -226,7 +220,8 @@ def joint_link_boundaries(q, boxes, link_radius=0.035):
 
     links = build_robot_boundary(p_list, r=link_radius)
 
-    for link in links:
+    # check collision (not for the base link)
+    for link in links[1:]:
         A = link["start"]
         B = link["end"]
         r = link["radius"]
@@ -257,7 +252,7 @@ def nearest_node(tree, q_rand):
     return tree[nearest_index]
 
 # -------------------------------------------------------------------------------------------------
-def expand_rrt(q_start, q_target, max_step_size, steps, boxes):
+def expand_rrt(q_start, q_target, max_step_size, steps, boxes, output_type, alg_type):
     """
     Runs the RRT algorithm repeadedly until either a solution is found
     or the steps parameter is exceeded
@@ -273,6 +268,19 @@ def expand_rrt(q_start, q_target, max_step_size, steps, boxes):
         - tree: Path from start config to goal config
 
     """
+    global costs
+
+    if alg_type == "rrt":
+        print("Running RRT Algotithm")
+
+
+    elif alg_type == "rrt_star":
+        print("Running RRT* Algotithm")
+
+    elif alg_type == "preview":
+        return
+
+
     q_start = np.array(q_start, dtype=float)
     q_target = np.array(q_target, dtype=float)
 
@@ -304,22 +312,67 @@ def expand_rrt(q_start, q_target, max_step_size, steps, boxes):
 
         # 4) reject collision nodes (skeleton and boundary)
         if check_collision(q_candidate, boxes):
-            print("Rejected collision node:", q_candidate)
+            # print("Rejected collision node:", q_candidate)
             continue
 
         if joint_link_boundaries(q_candidate, boxes, 0.035):
-            print("Rejected collision node:", q_candidate)
+            # print("Rejected collision node:", q_candidate)
             continue
 
 
         # 5) accept node into tree
-        tree.append(q_candidate.copy())
-        parents[tuple(q_candidate)] = tuple(q_near)
+        if alg_type == "rrt":
+            # print("Running RRT Algotithm")
+            tree.append(q_candidate.copy())
+            parents[tuple(q_candidate)] = tuple(q_near)
 
+        # 5) accept node into tree
+        elif alg_type == "rrt_star":
+            # print("Running RRT* Algotithm")
+            nearby = near_nodes(tree, q_candidate, radius=60)
+
+            # initialize the best parent as the current parent and compute its cost
+            best_parent = q_near
+            best_cost = costs[tuple(q_near)] + np.linalg.norm(q_candidate - q_near)
+
+            # check to see if any of the nearby nodes result in a lower cost
+            for q_nearby in nearby:
+                if not smooth_node(q_nearby, q_candidate, boxes, samples=25):
+                    candidate_cost = costs[tuple(q_nearby)] + np.linalg.norm(q_candidate - q_nearby)
+
+                    if candidate_cost < best_cost:
+                        best_parent = q_nearby
+                        best_cost = candidate_cost
+
+            # add the lowest cost found from the initial and nearby nodes and update "tree"
+            tree.append(q_candidate.copy())
+            parents[tuple(q_candidate)] = tuple(best_parent)
+            costs[tuple(q_candidate)] = best_cost
+
+            # rewire old nodes
+            for q_nearby in nearby:
+                old_cost = costs[tuple(q_nearby)]
+                new_cost = costs[tuple(q_candidate)] + np.linalg.norm(q_nearby - q_candidate)
+
+                if new_cost < old_cost:
+                    if not smooth_node(q_candidate, q_nearby, boxes, samples=25):
+                        parents[tuple(q_nearby)] = tuple(q_candidate)
+                        costs[tuple(q_nearby)] = new_cost
+
+        else:
+            print("Invalid algorithm type")
+            return
+
+        # stop once a point is reached close to the goal
         if np.linalg.norm(q_candidate - q_target) < max_step_size:
             print("Goal reached")
-            return backtrack_path(parents, q_candidate)
+            tree.append(q_target)
+            if output_type == "0":
+                return tree
+            elif output_type in {"1", "2"}:
+                return backtrack_path(parents, q_candidate)
         
+    print("Solution Not Found!")
     return tree
 
 # -------------------------------------------------------------------------------------------------
@@ -384,6 +437,7 @@ def smooth_tree(tree, boxes, samples=25):
 
     return smoothed
 
+# -------------------------------------------------------------------------------------------------
 def smooth_node(q0, q1, boxes, samples=25):
     """
     Check whether the straight-line joint-space path between q0 and q1 collides.
@@ -406,67 +460,13 @@ def smooth_node(q0, q1, boxes, samples=25):
         q_interp = q0 + s * (q1 - q0)
 
         if joint_link_boundaries(q_interp, boxes, 0.035):
-            print("Rejected collision node:", q_interp)
+            # print("Rejected collision node:", q_interp)
             return True
 
     return False
 
-# def smooth_tree(tree, boxes):
-#     for i in range(len(tree)):
-#         for j in range(len(tree)):
-#             bool = smooth_node(tree[i], tree[j+1], boxes)
-#             if bool is True:
-#                 break
-#             else:
-#                 continue
-#         # print(tree[i])
-
-#     return tree
-
-# def smooth_node(tree_s, tree_int, boxes):
-#     """
-#     Densify a path by interpolating between nodes.
-
-#     Inputs:
-#         - tree_s: list of joint configs (path)
-#         - tree_int: number of interpolation points between each pair
-
-#     Returns:
-#         - new_tree: densified path
-#     """
-#     new_tree = []
-
-#     for i in range(len(tree_s) - 1):
-#         q0 = np.array(tree_s[i], dtype=float)
-#         q1 = np.array(tree_s[i + 1], dtype=float)
-
-#         # include start of segment
-#         new_tree.append(q0)
-
-#         # interpolate between q0 and q1
-#         for s in np.linspace(0, 1, tree_int + 2)[1:-1]:
-#             q_interp = q0 + s * (q1 - q0)
-#             new_tree.append(q_interp)
-
-#     # include final node
-#     new_tree.append(np.array(tree_s[-1], dtype=float))
-
-#     bool = []
-#     for i in range(len(new_tree)): 
-#         if joint_link_boundaries(new_tree[i], boxes, 0.035):
-#             print("Rejected collision node:", new_tree[i])
-#             bool.append(True)
-            
-
-#     if np.any(bool) is False:
-#         bool2 = False
-#     else:
-#         bool2 = True
-#     return bool2
-    
-
 # -------------------------------------------------------------------------------------------------
-def start_rrt(q_start, q_goal, max_step_size, yaml_file):
+def start_rrt(q_start, q_goal, max_step_size, yaml_file, output_type, alg_type):
     """
     Initializes the RRT algorithm
 
@@ -475,25 +475,164 @@ def start_rrt(q_start, q_goal, max_step_size, yaml_file):
         - q_goal: 
         - max_step_size:
         - yaml_file: 
+        - output_type: dictates which of the explored nodes are plotted:
+            "0" -> all of them (everything in the search tree), 
+            "1": -> the initial path found (not smoothed)
+            "2": -> the smoothed path
+            other -> default to "2"
 
     returns: 
         - tree: 
     """
-    boxes = load_box_obstacles(yaml_file)
+    global costs
+    if alg_type == "preview":
+        return
+    # initialize cost tracker
+    costs = {tuple(q_start): 0.0}
+
+    boxes = load_box_obstacles(yaml_file, margin=0.00)
     bool = joint_link_boundaries(q_start, boxes)
     if bool is True:
         print("Starting configuration is in collision with environment")
         return
 
+
+
     # expand tree until the goal configuration is reached and return the path
-    tree = expand_rrt(q_start, q_goal, max_step_size, 5000, boxes)
+    if alg_type in {"rrt", "rrt_star"}:
+        tree = expand_rrt(q_start, q_goal, max_step_size, 5000, boxes, output_type, alg_type)
+
+    elif alg_type == "birrt":
+        tree = expand_bidirectional_rrt(
+            q_start,
+            q_goal,
+            max_step_size,
+            5000,
+            boxes
+        )
+
+    if output_type in {"0", "1"}:
+        return tree
 
     # apply smoothing to the found path
     tree = smooth_tree(tree, boxes)
 
+    if output_type == "2":
+        return tree
+    else:
+        return tree
 
-    return tree
+# -------------------------------------------------------------------------------------------------
+def near_nodes(tree, q_new, radius):
+    return [
+        node for node in tree
+        if np.linalg.norm(node - q_new) <= radius
+    ]
 
+# =========== Bidirectional RRT Planning ================
+def extend_tree(tree, parents, q_target, max_step_size, boxes):
+    q_near = nearest_node(tree, q_target)
+
+    direction = q_target - q_near
+    distance = np.linalg.norm(direction)
+
+    if distance == 0:
+        return None
+
+    if distance <= max_step_size:
+        q_candidate = q_target.copy()
+    else:
+        q_candidate = q_near + (direction / distance) * max_step_size
+
+    if joint_link_boundaries(q_candidate, boxes, 0.035):
+        return None
+
+    if smooth_node(q_near, q_candidate, boxes, samples=10):
+        return None
+
+    tree.append(q_candidate.copy())
+    parents[tuple(q_candidate)] = tuple(q_near)
+
+    return q_candidate
+
+# -------------------------------------------------------------------------------------------------
+def connect_paths(parents_start, parents_goal, q_connect_start, q_connect_goal):
+    path_start = backtrack_path(parents_start, q_connect_start)
+    path_goal = backtrack_path(parents_goal, q_connect_goal)
+
+    # path_goal currently goes goal -> connection,
+    # so reverse it to go connection -> goal
+    path_goal.reverse()
+
+    return path_start + path_goal
+
+# -------------------------------------------------------------------------------------------------
+def expand_bidirectional_rrt(q_start, q_goal, max_step_size, steps, boxes):
+
+    print("Running Bidirectional RRT Algotithm")
+    q_start = np.array(q_start, dtype=float)
+    q_goal = np.array(q_goal, dtype=float)
+
+    tree_start = [q_start.copy()]
+    tree_goal = [q_goal.copy()]
+
+    parents_start = {tuple(q_start): None}
+    parents_goal = {tuple(q_goal): None}
+
+    for k in range(steps):
+
+        if np.random.rand() < 0.1:
+            q_rand = q_goal.copy()
+        else:
+            q_rand = np.random.uniform(low=-180, high=180, size=len(q_start))
+
+        # grow start-side tree
+        q_new_start = extend_tree(
+            tree_start,
+            parents_start,
+            q_rand,
+            max_step_size,
+            boxes
+        )
+
+        if q_new_start is None:
+            continue
+
+        # try to connect goal-side tree toward new start-side node
+        q_new_goal = extend_tree(
+            tree_goal,
+            parents_goal,
+            q_new_start,
+            max_step_size,
+            boxes
+        )
+
+        if q_new_goal is not None:
+            # consider them connected if there is nothing directly in between them
+            if not smooth_node(q_new_start, q_new_goal, boxes, samples=10):
+                print("Bidirectional RRT connected")
+
+                if k % 2 == 0:
+                    return connect_paths(
+                        parents_start,
+                        parents_goal,
+                        q_new_start,
+                        q_new_goal
+                    )
+                else:
+                    return connect_paths(
+                        parents_goal,
+                        parents_start,
+                        q_new_goal,
+                        q_new_start
+                    )
+
+        # swap trees so they alternate growing
+        tree_start, tree_goal = tree_goal, tree_start
+        parents_start, parents_goal = parents_goal, parents_start
+
+    print("Solution Not Found!")
+    return None
 
 # ============ Visualization Helpers ==========================
 def plot_yaml_scene(ax, yaml_file):
@@ -522,7 +661,7 @@ def plot_yaml_scene(ax, yaml_file):
             cube = Poly3DCollection(
                 faces,
                 facecolor=color[:3],
-                alpha=color[3] if len(color) == 4 else 0.35,
+                alpha=0.1,
                 edgecolor="black"
             )
 
@@ -573,7 +712,7 @@ def plot_robot_skeleton(ax, q, label, color, alpha=1.0):
     return p
 
 # -------------------------------------------------------------------------------------------------
-def plot_link_cylinder(ax, p0, p1, radius=0.035, color="tab:green", alpha=0.75, resolution=16):
+def plot_link_cylinder(ax, p0, p1, radius=0.035, color="tab:green", alpha=0.35, resolution=16):
     """
     Plot a cylinder around a robot link from p0 to p1.
     """
@@ -707,34 +846,35 @@ def render_scene_with_start_goal(yaml_file, base_q, goal_q, new_q):
         goal_q,
         label="Goal Pose",
         color="tab:orange",
-        alpha=0.85
+        alpha=1.0
     )
 
     all_robot_points = [p_base, p_goal]
 
-    for i in range(len(new_q)):
-        p_new = plot_robot_skeleton(
-            ax,
-            new_q[i],
-            label="New Pose" if i == 0 else None,
-            color="tab:green",
-            alpha=0.85
-        )
+    if new_q is not None:
+        for i in range(len(new_q)):
+            p_new = plot_robot_skeleton(
+                ax,
+                new_q[i],
+                label="New Pose" if i == 0 else None,
+                color="tab:green",
+                alpha=0.85
+            )
 
-        p_cyl = plot_robot_cylinders(
-            ax,
-            new_q[i],
-            radius=0.035,
-            color="tab:green",
-            alpha=0.20
-        )
+            p_cyl = plot_robot_cylinders(
+                ax,
+                new_q[i],
+                radius=0.035,
+                color="tab:green",
+                alpha=0.20
+            ) 
 
-        all_robot_points.append(p_new)
-        all_robot_points.append(p_cyl)
+            all_robot_points.append(p_new)
+            all_robot_points.append(p_cyl)
 
-    ax.plot([0, 0.08], [0, 0], [0, 0], color="r", linewidth=2)
-    ax.plot([0, 0], [0, 0.08], [0, 0], color="g", linewidth=2)
-    ax.plot([0, 0], [0, 0], [0, 0.08], color="b", linewidth=2)
+        ax.plot([0, 0.08], [0, 0], [0, 0], color="r", linewidth=2)
+        ax.plot([0, 0], [0, 0.08], [0, 0], color="g", linewidth=2)
+        ax.plot([0, 0], [0, 0], [0, 0.08], color="b", linewidth=2)
 
     all_points = np.vstack([scene_pts] + all_robot_points)
     set_equal_axes(ax, all_points)
@@ -747,11 +887,33 @@ def render_scene_with_start_goal(yaml_file, base_q, goal_q, new_q):
 
     plt.show()
 
+# ================ Saving Function ===================
+def save_path_csv(path, filename="rrt_path.csv"):
+    path.reverse()
+    path = np.asarray(path, dtype=float)
+    
+
+    header = "joint1,joint2,joint3,joint4,joint5,joint6"
+
+    np.savetxt(
+        filename,
+        path,
+        delimiter=",",
+        header=header,
+        comments=""
+    )
+
+    print(f"Saved path to {filename}")
+
 if __name__ == "__main__":
     q_start = [0, 0, 0, 0, 0, 0]
     q_goal = [-33, 58, 69, 38, 87, 64]
 
-    q_new = start_rrt(q_start, q_goal, 30, "lab_scene.yaml")
+    # run the algorithm 
+    # options:
+    # "0": Display all explored nodes "1": Display the found path "2": display the filtered pagth
+    # "preview" only display the scene, don't solve "rrt": run basic rrt algorithm "rrt_star: run rrt* algorithm "birrt": run bidirectional rrt algorithm
+    q_new = start_rrt(q_start, q_goal, 5, "lab_scene.yaml", "2", "birrt")
 
     render_scene_with_start_goal(
         "lab_scene.yaml",
@@ -759,3 +921,5 @@ if __name__ == "__main__":
         q_goal,
         q_new
     )
+
+    save_path_csv(q_new, "rrt_path.csv")
