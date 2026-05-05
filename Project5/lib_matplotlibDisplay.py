@@ -12,12 +12,17 @@ def cube_faces(position, size):
     Construct the cube extracted from the yaml file
 
     Inputs:
-        - position: 
-        - size:
+        - position: [cx, cy, cz]
+            Center position of the box in 3D space.
+        - size: [sx, sy, sz]
+            Box dimensions along each axis.
 
     Returns:
-        - faces: 
-        - v: 
+        - faces:
+            List of 6 faces, where each face contains 4 corner vertices.
+            Used by Poly3DCollection for plotting.
+        - v:
+            Array of the 8 box vertices.
     """
     cx, cy, cz = position
     sx, sy, sz = size
@@ -49,6 +54,21 @@ def load_box_obstacles(yaml_file, margin=0.00):
     """
     Loads box obstacles and inflates them by margin.
     margin is in meters.
+
+    Inputs:
+        -yaml_file: the yaml file that contains the obstacle information
+        -margin: extra padding around the obstacle
+
+    Returns:
+        - boxes:
+            List of axis-aligned bounding boxes (AABBs), where each box is
+            represented as a tuple (mins, maxs).
+
+            mins: [xmin, ymin, zmin] → lower corner of the box  
+            maxs: [xmax, ymax, zmax] → upper corner of the box  
+
+            These bounds are optionally inflated by the specified margin and
+            are used for collision detection.
     """
     with open(yaml_file, "r") as f:
         scene = yaml.safe_load(f)
@@ -68,6 +88,20 @@ def load_box_obstacles(yaml_file, margin=0.00):
 
 # -------------------------------------------------------------------------------------------------
 def unpack_box(box):
+    """
+    Standardizes different box formats into (min, max) numpy arrays.
+
+    Inputs:
+        - box:
+            Can be either:
+            1) dict with keys "min" and "max"
+            2) tuple/list of (mins, maxs)
+
+    Returns:
+        - (box_min, box_max):
+            Each is a numpy array [x, y, z] representing the
+            lower and upper corners of the axis-aligned box.
+    """
     if isinstance(box, dict):
         return np.asarray(box["min"], dtype=float), np.asarray(box["max"], dtype=float)
 
@@ -80,6 +114,14 @@ def unpack_box(box):
 def closest_point_on_box(p, box_min, box_max):
     """
     Closest point on an axis-aligned box to point p.
+
+    Inputs:
+        - p: the location on the robot that is being checked for collision
+        - box_min: [xmin, ymin, zmin] → lower corner of the box  
+        - box_max: [xmax, ymax, zmax] → upper corner of the box  
+
+    Returns:
+        p_clamped: the corresponding closest point to p on the box surface
     """
 
     # Step 1: clamp to upper bounds
@@ -171,6 +213,10 @@ def check_collision(q, boxes):
         - bool: True if collision occured, False otherwise
     """
     _, p_list, _, _ = fk_cr3(q)
+
+    # modify the FK/DH point list before checking collision
+    points = reshape_dh(p_list)
+
     points = np.asarray(p_list, dtype=float)
 
     # run collision check, but not for the base link (it's attatched to the floor)
@@ -185,6 +231,83 @@ def check_collision(q, boxes):
 
     return False
 
+def reshape_dh(p_list):
+    p = np.asarray(p_list, dtype=float)
+
+    offset = np.array([0.0, -0.116, 0.0])  # shift link 2 to better match the real robot
+    protrude = 0.05  # 5 cm
+
+    modified_links = []
+
+    def extend_link(A, B, mode="none"):
+        """
+        Used to make the skeleton better match the real robot geometry
+
+        Inputs:
+            - A: the starting point of the link
+            - B: the ending point of the link
+            - mode: dictates what type of extension occurs
+                "none"  -> no extension
+                "both"  -> extend both ends
+                "A"     -> extend only A backward
+                "B"     -> extend only B forward
+
+        Returns:
+            - A_ext: extended A
+            - B_ext: extended B
+        """
+
+        A = np.asarray(A)
+        B = np.asarray(B)
+
+        if mode == "none":
+            return (A, B)
+
+        d = B - A
+        L = np.linalg.norm(d)
+
+        if L < 1e-9:
+            return (A, B)
+
+        d_hat = d / L
+
+        A_ext = A
+        B_ext = B
+
+        if mode in ("both", "A"):
+            A_ext = A - protrude * d_hat
+
+        if mode in ("both", "B"):
+            B_ext = B + protrude * d_hat
+
+        return (A_ext, B_ext)
+    
+
+    # --- Link 0: base/original first link ---
+    modified_links.append(extend_link(p[0], p[1], mode="B"))
+
+    # --- Connector 1: original link to offset link ---
+    modified_links.append(extend_link(p[1], p[1] + offset, mode="B"))
+
+    # --- Link 1: offset second link ---
+    modified_links.append(extend_link(p[1] + offset, p[2] + offset, mode="None"))
+
+    # --- Connector 2: offset link back to original chain ---
+    modified_links.append(extend_link(p[2] + offset, p[2], mode="both"))
+
+    # --- Link 2 ---
+    modified_links.append(extend_link(p[2], p[3], mode="None"))
+
+    # --- Link 3 ---
+    modified_links.append(extend_link(p[3], p[4], mode="A"))
+
+    # --- Link 4 ---
+    modified_links.append(extend_link(p[4], p[5], mode="A"))
+
+    # --- Link 5 ---
+    modified_links.append(extend_link(p[5], p[6], mode="None"))
+
+    return modified_links
 # -------------------------------------------------------------------------------------------------
 def joint_link_boundaries(q, boxes, link_radius=0.035):
     """
@@ -206,30 +329,18 @@ def joint_link_boundaries(q, boxes, link_radius=0.035):
     Returns:
         bool: True if collision occurs, False otherwise
     """
-
     _, p_list, _, T0e = fk_cr3(q)
 
-    # Make sure p_list is an array of 3D points
-    p_list = np.asarray(p_list, dtype=float)
+    links = reshape_dh(p_list)
 
-    # Optional: include base if fk_cr3 does not include it
-    # p_list should look like:
-    # [base, joint1, joint2, ..., end_effector]
-    if p_list.shape[1] != 3:
-        raise ValueError("p_list must be an Nx3 array of 3D points.")
-
-    links = build_robot_boundary(p_list, r=link_radius)
-
-    # check collision (not for the base link)
-    for link in links[1:]:
-        A = link["start"]
-        B = link["end"]
-        r = link["radius"]
+    for A, B in links[1:]:
+        A = np.asarray(A, dtype=float)
+        B = np.asarray(B, dtype=float)
 
         for box in boxes:
             box_min, box_max = unpack_box(box)
 
-            if segment_box_collision(A, B, r, box_min, box_max):
+            if segment_box_collision(A, B, link_radius, box_min, box_max):
                 return True
 
     return False
@@ -247,6 +358,7 @@ def nearest_node(tree, q_rand):
     Returns: 
         - tree[nearest_index]: the closest entry in the search tree to the random joint config
     """
+
     distances = [np.linalg.norm(node - q_rand) for node in tree]
     nearest_index = np.argmin(distances)
     return tree[nearest_index]
@@ -258,11 +370,21 @@ def expand_rrt(q_start, q_target, max_step_size, steps, boxes, output_type, alg_
     or the steps parameter is exceeded
 
     Inputs:
-        - q_start:
-        - q_target:
-        - max_step_size: 
-        - steps: 
-        - boxes:
+        - q_start: initial joint configuration
+        - q_target: target joint configuration
+        - max_step_size: maximum joint step size between steps
+        - steps: maximum iterations to run before returning unsuccessfully
+        - boxes: collision zone
+        - output_type: dictates which of the explored nodes are plotted:
+            "0" -> all of them (everything in the search tree), 
+            "1": -> the initial path found (not smoothed)
+            "2": -> the smoothed path
+            other -> default to "2"
+        -alg_type: which algorithm is run
+            "rrt": basic rrt algorithm
+            "rrt_star": rrt* algorithm
+            "preview": only display the scene setup
+            "birrt" bidirectional rrt; if this is the case, expand_rrt will not be called; expand_bidirectional_rrt() will be instead
 
     Returns:
         - tree: Path from start config to goal config
@@ -378,15 +500,26 @@ def expand_rrt(q_start, q_target, max_step_size, steps, boxes, output_type, alg_
 # -------------------------------------------------------------------------------------------------
 def backtrack_path(parents, q_end):
     """
-    Backtracks from the goal to the start, extracting the
-    path that will take me there
+    Reconstructs a path by following parent pointers from a given node
+    back to the root of its tree.
+
+    For regular RRT / RRT*:
+        - q_end is typically the node near the goal
+        - parents traces back to the start configuration
+        - Result is a start → goal path (after reversing)
+
+    For Bidirectional RRT:
+        - This is used to extract partial paths from each tree
+        - One path is from start → connection point
+        - The other is from goal → connection point (later reversed)
+        - These are then combined using connect_paths()
 
     Inputs:
-        - parents:
-        - q_end:
+        - parents: dictionary mapping node → parent node
+        - q_end: the node to start backtracking from
 
     Returns: 
-        - path: the path from the start to goal config
+        - path: ordered list of configurations from root → q_end
     """
     path = []
     current = tuple(q_end)
@@ -471,10 +604,10 @@ def start_rrt(q_start, q_goal, max_step_size, yaml_file, output_type, alg_type):
     Initializes the RRT algorithm
 
     Inputs:
-        - q_start:
-        - q_goal: 
-        - max_step_size:
-        - yaml_file: 
+        - q_start: initial joint configuration
+        - q_goal: goal joint configuration
+        - max_step_size: maximum each joint can step per iteration
+        - yaml_file: the file containing the collision obstacles
         - output_type: dictates which of the explored nodes are plotted:
             "0" -> all of them (everything in the search tree), 
             "1": -> the initial path found (not smoothed)
@@ -524,6 +657,19 @@ def start_rrt(q_start, q_goal, max_step_size, yaml_file, output_type, alg_type):
 
 # -------------------------------------------------------------------------------------------------
 def near_nodes(tree, q_new, radius):
+    """
+    Returns nearby nodes to check for more optimal path when running RRT*
+
+    Inputs:
+        - tree: list of existing nodes (joint configurations) in the RRT
+        - q_new: the newly generated node to compare against
+        - radius: distance threshold defining the neighborhood
+
+    Returns:
+        - nearby_nodes: list of nodes within the specified radius of q_new.
+                        These are used in RRT* for choosing a better parent
+                        and for rewiring to improve path optimality.
+    """
     return [
         node for node in tree
         if np.linalg.norm(node - q_new) <= radius
@@ -531,6 +677,31 @@ def near_nodes(tree, q_new, radius):
 
 # =========== Bidirectional RRT Planning ================
 def extend_tree(tree, parents, q_target, max_step_size, boxes):
+    """
+    Attempts to grow a tree toward a target configuration by one step.
+
+    This function is used in Bidirectional RRT (BiRRT) to incrementally
+    extend either the start tree or the goal tree toward a sampled node
+    or toward the other tree.
+
+    Steps:
+        1) Find the nearest existing node in the tree to q_target
+        2) Move from that node toward q_target (bounded by max_step_size)
+        3) Reject the candidate if it is in collision or the path is invalid
+        4) If valid, add it to the tree and record its parent
+
+    Inputs:
+        - tree: list of existing nodes (joint configurations)
+        - parents: dictionary mapping each node to its parent node
+        - q_target: configuration the tree is trying to extend toward
+        - max_step_size: maximum distance allowed per extension step
+        - boxes: environment obstacles for collision checking
+
+    Returns:
+        - q_candidate: the new node added to the tree if successful
+        - None: if extension fails (collision or invalid step)
+    """
+
     q_near = nearest_node(tree, q_target)
 
     direction = q_target - q_near
@@ -557,6 +728,24 @@ def extend_tree(tree, parents, q_target, max_step_size, boxes):
 
 # -------------------------------------------------------------------------------------------------
 def connect_paths(parents_start, parents_goal, q_connect_start, q_connect_goal):
+    """
+    Connects the two search trees when running bidirectional RRT.
+
+    This function is called once a node from the start tree and a node
+    from the goal tree can be connected without collision. It reconstructs
+    the full path by backtracking through both trees and concatenating them.
+
+    Inputs:
+        - parents_start: parent dictionary for the tree grown from the start
+        - parents_goal: parent dictionary for the tree grown from the goal
+        - q_connect_start: connection node in the start tree
+        - q_connect_goal: connection node in the goal tree
+
+    Returns: 
+        - path: full path from start → goal formed by:
+                (start → connection) + (connection → goal)
+    """
+
     path_start = backtrack_path(parents_start, q_connect_start)
     path_goal = backtrack_path(parents_goal, q_connect_goal)
 
@@ -568,8 +757,43 @@ def connect_paths(parents_start, parents_goal, q_connect_start, q_connect_goal):
 
 # -------------------------------------------------------------------------------------------------
 def expand_bidirectional_rrt(q_start, q_goal, max_step_size, steps, boxes):
+    """
+    Executes the Bidirectional Rapidly-Exploring Random Tree (BiRRT) algorithm
+    to find a collision-free path between a start and goal configuration.
 
-    print("Running Bidirectional RRT Algotithm")
+    This method grows two trees simultaneously:
+        - One rooted at the start configuration
+        - One rooted at the goal configuration
+
+    At each iteration:
+        1) A random configuration q_rand is sampled (with goal bias)
+        2) The start tree is extended toward q_rand
+        3) The goal tree is then extended toward the newly added node
+        4) If both trees can connect without collision, a full path is constructed
+
+    The trees alternate growth directions by swapping roles each iteration,
+    allowing efficient exploration of the configuration space.
+
+    Inputs:
+        - q_start: starting joint configuration
+        - q_goal: goal joint configuration
+        - max_step_size: maximum step size when extending the tree
+        - steps: maximum number of iterations allowed
+        - boxes: obstacle environment for collision checking
+
+    Returns:
+        - path: list of configurations from start → goal if a connection is found
+        - None: if no valid path is found within the given number of steps
+
+    Notes:
+        - extend_tree() handles local expansion and collision rejection
+        - smooth_node() ensures the connection between trees is collision-free
+        - connect_paths() reconstructs the full path using parent pointers
+        - A final direction check ensures the path is always start → goal,
+          regardless of which tree completed the connection
+    """
+
+    print("Running Bidirectional RRT Algorithm")
     q_start = np.array(q_start, dtype=float)
     q_goal = np.array(q_goal, dtype=float)
 
@@ -586,7 +810,6 @@ def expand_bidirectional_rrt(q_start, q_goal, max_step_size, steps, boxes):
         else:
             q_rand = np.random.uniform(low=-180, high=180, size=len(q_start))
 
-        # grow start-side tree
         q_new_start = extend_tree(
             tree_start,
             parents_start,
@@ -598,7 +821,6 @@ def expand_bidirectional_rrt(q_start, q_goal, max_step_size, steps, boxes):
         if q_new_start is None:
             continue
 
-        # try to connect goal-side tree toward new start-side node
         q_new_goal = extend_tree(
             tree_goal,
             parents_goal,
@@ -608,26 +830,30 @@ def expand_bidirectional_rrt(q_start, q_goal, max_step_size, steps, boxes):
         )
 
         if q_new_goal is not None:
-            # consider them connected if there is nothing directly in between them
             if not smooth_node(q_new_start, q_new_goal, boxes, samples=10):
                 print("Bidirectional RRT connected")
 
                 if k % 2 == 0:
-                    return connect_paths(
+                    path = connect_paths(
                         parents_start,
                         parents_goal,
                         q_new_start,
                         q_new_goal
                     )
                 else:
-                    return connect_paths(
+                    path = connect_paths(
                         parents_goal,
                         parents_start,
                         q_new_goal,
                         q_new_start
                     )
 
-        # swap trees so they alternate growing
+                # force path direction: start -> goal
+                if np.linalg.norm(path[0] - q_start) > np.linalg.norm(path[-1] - q_start):
+                    path.reverse()
+
+                return path
+
         tree_start, tree_goal = tree_goal, tree_start
         parents_start, parents_goal = parents_goal, parents_start
 
@@ -637,15 +863,19 @@ def expand_bidirectional_rrt(q_start, q_goal, max_step_size, steps, boxes):
 # ============ Visualization Helpers ==========================
 def plot_yaml_scene(ax, yaml_file):
     """
-    Plots the 3D scene in MatPlotLib
+    Plots the 3D scene in MatPlotLib by loading box obstacles from a YAML file.
 
     Inputs:
-        - ax:
-        - yaml_file:
+        - ax: MatPlotLib 3D axis object used for plotting
+        - yaml_file: path to the YAML file containing scene object definitions
 
     Returns: 
-        -
+        - all_vertices:
+            Nx3 numpy array of all vertices from every box in the scene.
+            Used later for setting equal axis scaling in the plot.
+            Returns an empty array if no objects are present.
     """
+
     with open(yaml_file, "r") as f:
         scene = yaml.safe_load(f)
 
@@ -675,46 +905,73 @@ def plot_yaml_scene(ax, yaml_file):
 # -------------------------------------------------------------------------------------------------
 def plot_robot_skeleton(ax, q, label, color, alpha=1.0):
     """
-    Overlays the initial and final robot "skeleton" 
-    in the MatPlotLib environment along with the
-    Steps leading to the goal, if found
+    Plots the skeleton of the robot (modified from DH skeleton to better match the real robot)
+    into the MatPlotLib environment.
 
     Inputs:
-        - ax:
-        - q: joint configuration of skeleton
-        - label: 
-        - color: color of the skeletons (different for start, intermediate and goal)
-        - alpha: color transparency value
+        - ax: MatPlotLib 3D axis object used for plotting
+        - q: joint configuration (array-like of joint angles)
+        - label: label for the plotted skeleton (used in legend)
+        - color: color of the skeleton links and joints
+        - alpha: transparency level for the plot
 
-    Returns:
-        - p:
+    Returns: 
+        - all_points:
+            Nx3 numpy array of all endpoints of the plotted links.
+            Used later for setting equal axis scaling and combining
+            with other plotted elements.
     """
+
     _, p_list, _, T0e = fk_cr3(q)
 
-    p = np.asarray(p_list, dtype=float)
+    links = reshape_dh(p_list)
+
+    first = True
+    all_points = []
+
+    for A, B in links:
+        A = np.asarray(A, dtype=float)
+        B = np.asarray(B, dtype=float)
+
+        ax.plot(
+            [A[0], B[0]],
+            [A[1], B[1]],
+            [A[2], B[2]],
+            marker="o",
+            linewidth=3,
+            color=color,
+            alpha=alpha,
+            label=label if first else None
+        )
+
+        first = False
+        all_points.extend([A, B])
+
     ee = T0e[:3, 3]
+    ax.scatter(ee[0], ee[1], ee[2], s=60, color=color, alpha=alpha)
 
-    ax.plot(
-        p[:, 0], p[:, 1], p[:, 2],
-        marker="o",
-        linewidth=3,
-        color=color,
-        alpha=alpha,
-        label=label
-    )
-
-    ax.scatter(
-        ee[0], ee[1], ee[2],
-        s=60,
-        color=color,
-        alpha=alpha
-    )
-    return p
-
+    return np.asarray(all_points)
 # -------------------------------------------------------------------------------------------------
 def plot_link_cylinder(ax, p0, p1, radius=0.035, color="tab:green", alpha=0.35, resolution=16):
     """
-    Plot a cylinder around a robot link from p0 to p1.
+    Plots a cylindrical surface representing a robot link between two points.
+
+    This function constructs a cylinder aligned along the vector from p0 to p1,
+    using an orthonormal basis perpendicular to the link direction. The cylinder
+    approximates the physical volume of the link for visualization and debugging
+    of collision boundaries.
+
+    Inputs:
+        - ax: MatPlotLib 3D axis object used for plotting
+        - p0: starting point of the link (3D coordinate)
+        - p1: ending point of the link (3D coordinate)
+        - radius: radius of the cylinder (link thickness)
+        - color: color of the cylinder surface
+        - alpha: transparency level of the cylinder
+        - resolution: number of angular samples used to approximate the circular cross-section
+
+    Returns:
+        - None (plots directly onto the provided axis)
     """
 
     p0 = np.asarray(p0, dtype=float)
@@ -770,36 +1027,65 @@ def plot_link_cylinder(ax, p0, p1, radius=0.035, color="tab:green", alpha=0.35, 
 # -------------------------------------------------------------------------------------------------
 def plot_robot_cylinders(ax, q, radius=0.035, color="tab:green", alpha=0.25):
     """
-    Plot cylindrical collision boundaries around each robot link.
+    Plots cylindrical collision boundaries around each link of the modified robot skeleton.
+
+    This function uses the reshaped DH link representation (which may include
+    offsets, connectors, and extensions) and draws a cylinder around each link
+    segment to approximate the physical volume of the robot for visualization
+    and collision debugging.
+
+    Inputs:
+        - ax: MatPlotLib 3D axis object used for plotting
+        - q: joint configuration (array-like of joint angles)
+        - radius: radius of each cylindrical link (collision thickness)
+        - color: color of the cylinders
+        - alpha: transparency level of the cylinders
+
+    Returns:
+        - all_points:
+            Nx3 numpy array of all endpoints of the cylindrical links.
+            Used for setting equal axis scaling and combining with other
+            plotted elements.
     """
 
     _, p_list, _, T0e = fk_cr3(q)
-    p_list = np.asarray(p_list, dtype=float)
 
-    for i in range(len(p_list) - 1):
-        p0 = p_list[i]
-        p1 = p_list[i + 1]
+    # This now returns [(A, B), (A, B), ...]
+    links = reshape_dh(p_list)
+
+    all_points = []
+
+    for A, B in links:
+        A = np.asarray(A, dtype=float)
+        B = np.asarray(B, dtype=float)
 
         plot_link_cylinder(
             ax,
-            p0,
-            p1,
+            A,
+            B,
             radius=radius,
             color=color,
             alpha=alpha
         )
 
-    return p_list
+        all_points.extend([A, B])
+
+    return np.asarray(all_points)
     
 # -------------------------------------------------------------------------------------------------
 def set_equal_axes(ax, all_points, pad=0.2):
     """
-    Ensures the MatPlotLib scales each axis equally
+    Ensures the MatPlotLib scales each axis equally so that geometry is not distorted.
+
+    This function computes a bounding cube that contains all provided points
+    and applies the same range to the x, y, and z axes. This prevents stretching
+    or squashing of the scene, which is especially important for accurately
+    visualizing robot geometry and collision volumes.
 
     Inputs:
-        - ax:
-        - all_points: 
-        - pad: 
+        - ax: MatPlotLib 3D axis object to modify
+        - all_points: Nx3 array of points (scene + robot) used to determine bounds
+        - pad: additional margin added to the bounding box for visual spacing
     """
     all_points = np.asarray(all_points)
 
@@ -825,7 +1111,26 @@ def set_equal_axes(ax, all_points, pad=0.2):
 # ================ Full Rendering Function ===================
 def render_scene_with_start_goal(yaml_file, base_q, goal_q, new_q):
     """
-    Function to overlay everything in MatPlotLib
+    Renders the full 3D scene including obstacles, robot configurations, and optional path.
+
+    This function overlays:
+        - The obstacle environment loaded from a YAML file
+        - The robot at the start configuration (base_q)
+        - The robot at the goal configuration (goal_q)
+        - Intermediate robot configurations (new_q), if provided
+        - Cylindrical link approximations for collision visualization
+
+    It also ensures consistent axis scaling and adds reference axes for orientation.
+
+    Inputs:
+        - yaml_file: path to the YAML file describing the obstacle environment
+        - base_q: starting joint configuration of the robot
+        - goal_q: goal joint configuration of the robot
+        - new_q: list of intermediate configurations (e.g., RRT path),
+                 or None if only start/goal should be displayed
+
+    Returns:
+        - None (displays the rendered MatPlotLib 3D figure)
     """
 
     fig = plt.figure(figsize=(10, 8))
@@ -889,7 +1194,23 @@ def render_scene_with_start_goal(yaml_file, base_q, goal_q, new_q):
 
 # ================ Saving Function ===================
 def save_path_csv(path, filename="rrt_path.csv"):
-    path.reverse()
+    """
+    Saves a joint-space path to a CSV file.
+
+    This function takes a sequence of joint configurations (typically
+    generated by RRT, RRT*, or BiRRT) and writes them to a CSV file,
+    where each row corresponds to a single configuration.
+
+    The path is assumed to already be ordered from start → goal.
+
+    Inputs:
+        - path: list or array of joint configurations (Nx6 for CR3)
+        - filename: name of the output CSV file
+
+    Returns:
+        - None (writes file to disk)
+    """
+
     path = np.asarray(path, dtype=float)
     
 
@@ -904,6 +1225,8 @@ def save_path_csv(path, filename="rrt_path.csv"):
     )
 
     print(f"Saved path to {filename}")
+
+
 
 if __name__ == "__main__":
     q_start = [0, 0, 0, 0, 0, 0]

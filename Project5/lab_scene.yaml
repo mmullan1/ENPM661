@@ -16,12 +16,12 @@ objects:
     size: [0.2, 0.2, 0.2]
     color: [0.5, 0.5, 0.5, 1.0]
 
-  # - name: box_1
-  #   type: box
-  #   position: [0.09, 0.18, 0.45]
-  #   rotation_rpy: [0.0, 0.0, 0.0]
-  #   size: [0.2, 0.2, 0.2]
-  #   color: [0.5, 0.5, 0.5, 1.0]
+  - name: box_1
+    type: box
+    position: [0.09, 0.18, 0.45]
+    rotation_rpy: [0.0, 0.0, 0.0]
+    size: [0.2, 0.2, 0.2]
+    color: [0.5, 0.5, 0.5, 1.0]
 
   - name: box_2
     type: box
