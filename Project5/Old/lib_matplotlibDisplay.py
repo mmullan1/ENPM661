@@ -231,6 +231,7 @@ def check_collision(q, boxes):
 
     return False
 
+# -------------------------------------------------------------------------------------------------
 def reshape_dh(p_list):
     p = np.asarray(p_list, dtype=float)
 
@@ -308,6 +309,7 @@ def reshape_dh(p_list):
     modified_links.append(extend_link(p[5], p[6], mode="None"))
 
     return modified_links
+
 # -------------------------------------------------------------------------------------------------
 def joint_link_boundaries(q, boxes, link_radius=0.035):
     """
@@ -1236,7 +1238,7 @@ if __name__ == "__main__":
     # options:
     # "0": Display all explored nodes "1": Display the found path "2": display the filtered pagth
     # "preview" only display the scene, don't solve "rrt": run basic rrt algorithm "rrt_star: run rrt* algorithm "birrt": run bidirectional rrt algorithm
-    q_new = start_rrt(q_start, q_goal, 5, "lab_scene.yaml", "2", "birrt")
+    q_new = start_rrt(q_start, q_goal, 5, "lab_scene.yaml", "2", "rrt")
 
     render_scene_with_start_goal(
         "lab_scene.yaml",
