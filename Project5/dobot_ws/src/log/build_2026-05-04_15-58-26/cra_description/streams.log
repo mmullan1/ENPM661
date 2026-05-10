@@ -1,0 +1,149 @@
+[0.010s] Invoking command in '/home/michael/dobot_ws/src/build/cra_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/michael/dobot_ws/install/servo_action:/home/michael/dobot_ws/install/dobot_moveit:/home/michael/dobot_ws/install/dobot_demo:/opt/ros/humble /usr/bin/cmake /home/michael/dobot_ws/src/DOBOT_6Axis_ROS2_V4/cra_description -DCMAKE_INSTALL_PREFIX=/home/michael/dobot_ws/src/install/cra_description
+[0.185s] -- The C compiler identification is GNU 11.4.0
+[0.321s] -- The CXX compiler identification is GNU 11.4.0
+[0.340s] -- Detecting C compiler ABI info
+[0.414s] -- Detecting C compiler ABI info - done
+[0.420s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.421s] -- Detecting C compile features
+[0.424s] -- Detecting C compile features - done
+[0.428s] -- Detecting CXX compiler ABI info
+[0.504s] -- Detecting CXX compiler ABI info - done
+[0.508s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.508s] -- Detecting CXX compile features
+[0.509s] -- Detecting CXX compile features - done
+[0.517s] -- Found ament_cmake: 1.3.14 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.657s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[0.798s] -- Configuring done
+[0.800s] -- Generating done
+[0.803s] -- Build files have been written to: /home/michael/dobot_ws/src/build/cra_description
+[0.807s] Invoked command in '/home/michael/dobot_ws/src/build/cra_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/michael/dobot_ws/install/servo_action:/home/michael/dobot_ws/install/dobot_moveit:/home/michael/dobot_ws/install/dobot_demo:/opt/ros/humble /usr/bin/cmake /home/michael/dobot_ws/src/DOBOT_6Axis_ROS2_V4/cra_description -DCMAKE_INSTALL_PREFIX=/home/michael/dobot_ws/src/install/cra_description
+[0.811s] Invoking command in '/home/michael/dobot_ws/src/build/cra_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/michael/dobot_ws/install/servo_action:/home/michael/dobot_ws/install/dobot_moveit:/home/michael/dobot_ws/install/dobot_demo:/opt/ros/humble /usr/bin/cmake --build /home/michael/dobot_ws/src/build/cra_description -- -j2 -l2
+[0.853s] Invoked command in '/home/michael/dobot_ws/src/build/cra_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/michael/dobot_ws/install/servo_action:/home/michael/dobot_ws/install/dobot_moveit:/home/michael/dobot_ws/install/dobot_demo:/opt/ros/humble /usr/bin/cmake --build /home/michael/dobot_ws/src/build/cra_description -- -j2 -l2
+[0.862s] Invoking command in '/home/michael/dobot_ws/src/build/cra_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/michael/dobot_ws/install/servo_action:/home/michael/dobot_ws/install/dobot_moveit:/home/michael/dobot_ws/install/dobot_demo:/opt/ros/humble /usr/bin/cmake --install /home/michael/dobot_ws/src/build/cra_description
+[0.870s] -- Install configuration: ""
+[0.870s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/ament_index/resource_index/package_run_dependencies/cra_description
+[0.870s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/ament_index/resource_index/parent_prefix_path/cra_description
+[0.870s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/environment/ament_prefix_path.sh
+[0.870s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/environment/ament_prefix_path.dsv
+[0.870s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/environment/path.sh
+[0.870s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/environment/path.dsv
+[0.870s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/local_setup.bash
+[0.870s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/local_setup.sh
+[0.870s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/local_setup.zsh
+[0.870s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/local_setup.dsv
+[0.870s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/package.dsv
+[0.870s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/ament_index/resource_index/packages/cra_description
+[0.870s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/cmake/cra_descriptionConfig.cmake
+[0.870s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/cmake/cra_descriptionConfig-version.cmake
+[0.870s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/package.xml
+[0.870s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/urdf
+[0.871s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/urdf/cr5_robot.xacro
+[0.872s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/urdf/cr12_robot.xacro
+[0.872s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/urdf/cr10af_robot.xacro
+[0.873s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/urdf/cr16_robot.xacro
+[0.874s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/urdf/nova5_robot.xacro
+[0.874s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/urdf/me6_robot.xacro
+[0.876s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/urdf/nova2_robot.xacro
+[0.876s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/urdf/cr20_robot.xacro
+[0.878s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/urdf/cr3_robot.xacro
+[0.878s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/urdf/cr10_robot.xacro
+[0.878s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/urdf/cr30h_robot.xacro
+[0.880s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/urdf/cr7_robot.xacro
+[0.880s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes
+[0.881s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/nova2
+[0.882s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/nova2/Link1.STL
+[0.884s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/nova2/Link6.STL
+[0.886s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/nova2/base_link.STL
+[0.888s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/nova2/Link2.STL
+[0.891s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/nova2/Link3.STL
+[0.895s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/nova2/Link5.STL
+[0.898s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/nova2/Link4.STL
+[0.901s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr30h
+[0.902s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr30h/Link1.STL
+[0.904s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr30h/Link6.STL
+[0.906s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr30h/base_link.STL
+[0.914s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr30h/Link2.STL
+[0.916s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr30h/Link3.STL
+[0.919s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr30h/Link5.STL
+[0.925s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr30h/Link4.STL
+[0.927s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr10af
+[0.928s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr10af/J5.STL
+[0.932s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr10af/J2.STL
+[0.934s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr10af/base_link.STL
+[0.936s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr10af/J3.STL
+[0.940s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr10af/J6.STL
+[0.941s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr10af/J4.STL
+[0.943s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr10af/J1.STL
+[0.946s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr5
+[0.947s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr5/J5.STL
+[0.949s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr5/J2.STL
+[0.951s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr5/base_link.STL
+[0.953s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr5/J3.STL
+[0.955s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr5/J6.STL
+[0.957s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr5/J4.STL
+[0.960s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr5/J1.STL
+[0.962s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr7
+[0.963s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr7/J5.STL
+[0.967s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr7/J2.STL
+[0.972s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr7/J3.STL
+[0.974s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr7/J6.STL
+[0.978s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr7/J4.STL
+[0.981s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr7/J1.STL
+[0.986s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr7/base_link0.STL
+[0.987s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/nova5
+[0.988s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/nova5/Link1.STL
+[0.990s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/nova5/Link6.STL
+[0.996s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/nova5/base_link.STL
+[1.000s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/nova5/Link2.STL
+[1.004s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/nova5/Link3.STL
+[1.005s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/nova5/Link5.STL
+[1.010s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/nova5/Link4.STL
+[1.014s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr10
+[1.014s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr10/Link1.STL
+[1.015s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr10/Link6.STL
+[1.018s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr10/base_link.STL
+[1.025s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr10/Link2.STL
+[1.028s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr10/Link3.STL
+[1.031s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr10/Link5.STL
+[1.034s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr10/Link4.STL
+[1.036s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr16
+[1.036s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr16/Link1.STL
+[1.039s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr16/Link6.STL
+[1.040s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr16/base_link.STL
+[1.046s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr16/Link2.STL
+[1.050s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr16/Link3.STL
+[1.052s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr16/Link5.STL
+[1.054s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr16/Link4.STL
+[1.057s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr20
+[1.057s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr20/Link1.STL
+[1.060s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr20/Link6.STL
+[1.063s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr20/base_link.STL
+[1.074s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr20/Link2.STL
+[1.078s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr20/Link3.STL
+[1.081s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr20/Link5.STL
+[1.083s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr20/Link4.STL
+[1.086s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr3
+[1.086s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr3/J5.STL
+[1.089s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr3/J2.STL
+[1.092s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr3/base_link.STL
+[1.093s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr3/J3.STL
+[1.096s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr3/J6.STL
+[1.098s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr3/J4.STL
+[1.100s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr3/J1.STL
+[1.101s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr12
+[1.102s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr12/J5.STL
+[1.104s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr12/J2.STL
+[1.106s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr12/J3.STL
+[1.110s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr12/J6.STL
+[1.113s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr12/J4.STL
+[1.115s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr12/J1.STL
+[1.116s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/cr12/base_link0.STL
+[1.126s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/me6
+[1.127s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/me6/Link1.STL
+[1.135s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/me6/Link6.STL
+[1.146s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/me6/base_link.STL
+[1.200s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/me6/Link2.STL
+[1.221s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/me6/Link3.STL
+[1.238s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/me6/Link5.STL
+[1.252s] -- Installing: /home/michael/dobot_ws/src/install/cra_description/share/cra_description/meshes/me6/Link4.STL
+[1.286s] Invoked command in '/home/michael/dobot_ws/src/build/cra_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/michael/dobot_ws/install/servo_action:/home/michael/dobot_ws/install/dobot_moveit:/home/michael/dobot_ws/install/dobot_demo:/opt/ros/humble /usr/bin/cmake --install /home/michael/dobot_ws/src/build/cra_description

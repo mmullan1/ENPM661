@@ -1,0 +1,5 @@
+gmake[2]: *** [CMakeFiles/dobot_msgs_v4__rosidl_typesupport_fastrtps_cpp.dir/build.make:1964: CMakeFiles/dobot_msgs_v4__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/dobot_msgs_v4/srv/detail/dds_fastrtps/set_back_distance__type_support.cpp.o] Interrupt
+gmake[1]: *** [CMakeFiles/Makefile2:310: CMakeFiles/dobot_msgs_v4__rosidl_typesupport_fastrtps_cpp.dir/all] Interrupt
+gmake[2]: *** [CMakeFiles/dobot_msgs_v4__rosidl_typesupport_introspection_cpp.dir/build.make:1824: CMakeFiles/dobot_msgs_v4__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/dobot_msgs_v4/srv/detail/di_group__type_support.cpp.o] Interrupt
+gmake[1]: *** [CMakeFiles/Makefile2:388: CMakeFiles/dobot_msgs_v4__rosidl_typesupport_introspection_cpp.dir/all] Interrupt
+gmake: *** [Makefile:146: all] Interrupt

@@ -1,0 +1,37 @@
+[0.609s] Invoking command in '/home/michael/dobot_ws/src/DOBOT_6Axis_ROS2_V4/dobot_demo': PYTHONPATH=/home/michael/dobot_ws/src/build/dobot_demo/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/michael/dobot_ws/src/install/dobot_demo/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/dobot_demo build --build-base /home/michael/dobot_ws/src/build/dobot_demo/build install --record /home/michael/dobot_ws/src/build/dobot_demo/install.log --single-version-externally-managed install_data
+[0.730s] running egg_info
+[0.730s] creating ../../build/dobot_demo/dobot_demo.egg-info
+[0.730s] writing ../../build/dobot_demo/dobot_demo.egg-info/PKG-INFO
+[0.730s] writing dependency_links to ../../build/dobot_demo/dobot_demo.egg-info/dependency_links.txt
+[0.730s] writing entry points to ../../build/dobot_demo/dobot_demo.egg-info/entry_points.txt
+[0.730s] writing requirements to ../../build/dobot_demo/dobot_demo.egg-info/requires.txt
+[0.730s] writing top-level names to ../../build/dobot_demo/dobot_demo.egg-info/top_level.txt
+[0.730s] writing manifest file '../../build/dobot_demo/dobot_demo.egg-info/SOURCES.txt'
+[0.732s] reading manifest file '../../build/dobot_demo/dobot_demo.egg-info/SOURCES.txt'
+[0.732s] writing manifest file '../../build/dobot_demo/dobot_demo.egg-info/SOURCES.txt'
+[0.733s] running build
+[0.733s] running build_py
+[0.733s] creating /home/michael/dobot_ws/src/build/dobot_demo/build
+[0.733s] creating /home/michael/dobot_ws/src/build/dobot_demo/build/lib
+[0.733s] creating /home/michael/dobot_ws/src/build/dobot_demo/build/lib/dobot_demo
+[0.733s] copying dobot_demo/__init__.py -> /home/michael/dobot_ws/src/build/dobot_demo/build/lib/dobot_demo
+[0.733s] copying dobot_demo/demo.py -> /home/michael/dobot_ws/src/build/dobot_demo/build/lib/dobot_demo
+[0.734s] running install
+[0.734s] running install_lib
+[0.734s] creating /home/michael/dobot_ws/src/install/dobot_demo/lib/python3.10/site-packages/dobot_demo
+[0.734s] copying /home/michael/dobot_ws/src/build/dobot_demo/build/lib/dobot_demo/__init__.py -> /home/michael/dobot_ws/src/install/dobot_demo/lib/python3.10/site-packages/dobot_demo
+[0.735s] copying /home/michael/dobot_ws/src/build/dobot_demo/build/lib/dobot_demo/demo.py -> /home/michael/dobot_ws/src/install/dobot_demo/lib/python3.10/site-packages/dobot_demo
+[0.735s] byte-compiling /home/michael/dobot_ws/src/install/dobot_demo/lib/python3.10/site-packages/dobot_demo/__init__.py to __init__.cpython-310.pyc
+[0.735s] byte-compiling /home/michael/dobot_ws/src/install/dobot_demo/lib/python3.10/site-packages/dobot_demo/demo.py to demo.cpython-310.pyc
+[0.736s] running install_data
+[0.736s] creating /home/michael/dobot_ws/src/install/dobot_demo/share/ament_index
+[0.736s] creating /home/michael/dobot_ws/src/install/dobot_demo/share/ament_index/resource_index
+[0.736s] creating /home/michael/dobot_ws/src/install/dobot_demo/share/ament_index/resource_index/packages
+[0.736s] copying resource/dobot_demo -> /home/michael/dobot_ws/src/install/dobot_demo/share/ament_index/resource_index/packages
+[0.736s] copying package.xml -> /home/michael/dobot_ws/src/install/dobot_demo/share/dobot_demo
+[0.736s] running install_egg_info
+[0.737s] Copying ../../build/dobot_demo/dobot_demo.egg-info to /home/michael/dobot_ws/src/install/dobot_demo/lib/python3.10/site-packages/dobot_demo-0.0.0-py3.10.egg-info
+[0.738s] running install_scripts
+[0.752s] Installing demo script to /home/michael/dobot_ws/src/install/dobot_demo/lib/dobot_demo
+[0.752s] writing list of installed files to '/home/michael/dobot_ws/src/build/dobot_demo/install.log'
+[0.765s] Invoked command in '/home/michael/dobot_ws/src/DOBOT_6Axis_ROS2_V4/dobot_demo' returned '0': PYTHONPATH=/home/michael/dobot_ws/src/build/dobot_demo/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/michael/dobot_ws/src/install/dobot_demo/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/dobot_demo build --build-base /home/michael/dobot_ws/src/build/dobot_demo/build install --record /home/michael/dobot_ws/src/build/dobot_demo/install.log --single-version-externally-managed install_data
