@@ -2810,8 +2810,8 @@ if __name__ == "__main__":
             "rrt_star_lazy"
             "birrt",
             "birrt_star",
-            "birrt_star_lazy"
-            "improved_birrt_star"
+            "birrt_star_lazy",
+            "improved_birrt_star",
             "improved_birrt_star_lazy"
         ],
         help="Algorithm type: preview, rrt, rrt_star, birrt, birrt_star, or improved_birrt_star"
